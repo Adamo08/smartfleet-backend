@@ -6,6 +6,7 @@ spring:
     url: jdbc:mysql://localhost:3306/vrspfab_api?createDatabaseIfNotExist=true
     username: root
     password: mysql_root_pass
-    jpa:
+  jpa:
       show-sql: true
-
+      hibernate:
+        ddl-auto: update
