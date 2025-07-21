@@ -2,13 +2,15 @@ package com.adamo.vrspfab.entities;
 
 import com.adamo.vrspfab.entities.enums.PaymentStatus;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 @Table(name = "payment")
 @Entity
 public class Payment {

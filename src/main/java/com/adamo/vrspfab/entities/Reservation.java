@@ -4,13 +4,16 @@ import com.adamo.vrspfab.entities.enums.ReservationStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime; // Changed from java.sql.Timestamp
+import java.util.HashSet;
+import java.util.Set;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
 @Entity
+@Builder
 @Table(name = "reservations")
 public class Reservation {
     @Id
@@ -26,10 +29,10 @@ public class Reservation {
     private Vehicle vehicle;
 
     @Column(nullable = false)
-    private Timestamp startDate;
+    private LocalDateTime startDate;
 
     @Column(nullable = false)
-    private Timestamp endDate;
+    private LocalDateTime endDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -38,7 +41,15 @@ public class Reservation {
     @Column(name = "comment", length = 500)
     private String comment;
 
-
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "reservation")
     private Payment payment;
+
+    @OneToOne
+    @JoinColumn(name = "slot_id")
+    private Slot slot;
+
+    // Bidirectional relationship for Bookmarks
+    @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<Bookmark> bookmarks = new HashSet<>();
 }

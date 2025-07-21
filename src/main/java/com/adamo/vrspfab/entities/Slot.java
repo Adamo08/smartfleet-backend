@@ -3,7 +3,7 @@ package com.adamo.vrspfab.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "slots")
@@ -22,11 +22,31 @@ public class Slot {
     private Vehicle vehicle;
 
     @Column(name = "start_time", nullable = false)
-    private Timestamp startTime;
+    private LocalDateTime startTime;
 
     @Column(name = "end_time", nullable = false)
-    private Timestamp endTime;
+    private LocalDateTime endTime;
 
     @Column(name = "is_available", nullable = false)
     private boolean isAvailable;
+
+    @OneToOne(mappedBy = "slot")
+    private Reservation reservation;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

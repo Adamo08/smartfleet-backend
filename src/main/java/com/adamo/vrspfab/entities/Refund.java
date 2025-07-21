@@ -2,18 +2,17 @@ package com.adamo.vrspfab.entities;
 
 import com.adamo.vrspfab.entities.enums.RefundStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
+import java.time.LocalDateTime; // Changed from java.sql.Timestamp
 
 @Entity
 @Table(name = "refunds")
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
+@Getter
+@Setter
 public class Refund {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,8 +36,13 @@ public class Refund {
     private RefundStatus status;
 
     @Column(name = "requested_at", nullable = false, updatable = false)
-    private Timestamp requestedAt;
+    private LocalDateTime requestedAt;
 
     @Column(name = "processed_at")
-    private Timestamp processedAt;
+    private LocalDateTime processedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        requestedAt = LocalDateTime.now();
+    }
 }

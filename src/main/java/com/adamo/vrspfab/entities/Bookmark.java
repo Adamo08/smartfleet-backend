@@ -3,7 +3,7 @@ package com.adamo.vrspfab.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "bookmarks")
@@ -26,8 +26,13 @@ public class Bookmark {
     private Reservation reservation;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private Timestamp createdAt;
+    private LocalDateTime createdAt;
 
     @Column(length = 500)
     private String note;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }

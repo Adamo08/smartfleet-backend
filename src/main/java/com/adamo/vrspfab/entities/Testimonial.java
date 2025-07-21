@@ -3,7 +3,7 @@ package com.adamo.vrspfab.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "testimonials")
@@ -31,8 +31,13 @@ public class Testimonial {
     private int rating;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private Timestamp createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "is_approved", nullable = false)
     private boolean isApproved;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }

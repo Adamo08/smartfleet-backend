@@ -4,8 +4,7 @@ import com.adamo.vrspfab.entities.enums.NotificationType;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.sql.Timestamp;
-
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -31,8 +30,13 @@ public class Notification {
     private NotificationType type;
 
     @Column(name = "created_at", updatable = false)
-    private Timestamp createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "is_read", nullable = false)
     private boolean isRead;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }

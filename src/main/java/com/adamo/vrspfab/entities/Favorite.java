@@ -3,6 +3,8 @@ package com.adamo.vrspfab.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "favorites")
 @AllArgsConstructor
@@ -23,5 +25,10 @@ public class Favorite {
     private Vehicle vehicle;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private java.sql.Timestamp createdAt;
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }
