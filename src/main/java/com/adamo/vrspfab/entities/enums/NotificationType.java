@@ -1,4 +1,4 @@
-package com.adamo.vrspfab.entities;
+package com.adamo.vrspfab.entities.enums;
 
 public enum NotificationType {
     BOOKING_CONFIRMATION,

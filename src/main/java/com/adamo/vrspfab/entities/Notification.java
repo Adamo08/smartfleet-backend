@@ -1,5 +1,6 @@
 package com.adamo.vrspfab.entities;
 
+import com.adamo.vrspfab.entities.enums.NotificationType;
 import jakarta.persistence.*;
 import lombok.*;
 

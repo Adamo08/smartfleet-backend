@@ -1,6 +1,8 @@
 package com.adamo.vrspfab.entities;
 
 
+import com.adamo.vrspfab.entities.enums.VehicleStatus;
+import com.adamo.vrspfab.entities.enums.VehicleType;
 import jakarta.persistence.*;
 import lombok.*;
 

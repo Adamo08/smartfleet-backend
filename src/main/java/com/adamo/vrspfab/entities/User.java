@@ -1,6 +1,7 @@
 package com.adamo.vrspfab.entities;
 
 
+import com.adamo.vrspfab.entities.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 

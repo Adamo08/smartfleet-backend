@@ -1,5 +1,6 @@
 package com.adamo.vrspfab.entities;
 
+import com.adamo.vrspfab.entities.enums.RefundStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
