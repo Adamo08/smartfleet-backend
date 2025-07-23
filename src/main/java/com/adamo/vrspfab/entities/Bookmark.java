@@ -1,5 +1,6 @@
 package com.adamo.vrspfab.entities;
 
+import com.adamo.vrspfab.users.User;
 import jakarta.persistence.*;
 import lombok.*;
 
