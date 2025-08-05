@@ -1,5 +1,6 @@
 package com.adamo.vrspfab.testimonials;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,9 @@ public class TestimonialController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public TestimonialDto createTestimonial(@RequestBody TestimonialDto testimonialDto) {
+    public TestimonialDto createTestimonial(@Valid @RequestBody TestimonialDto testimonialDto) {
+        System.out.println("Hello from createTestimonial in TestimonialController");
+        System.out.println("Received testimonialDto: " + testimonialDto);
         return testimonialService.createTestimonial(testimonialDto);
     }
 
