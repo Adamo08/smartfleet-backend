@@ -15,4 +15,10 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             type = EntityGraph.EntityGraphType.LOAD
     )
     Optional<Payment> findWithDetailsById(Long id);
+
+    @EntityGraph(
+            attributePaths = {"reservation"},
+            type = EntityGraph.EntityGraphType.LOAD
+    )
+    Optional<Payment> findByReservationId(Long reservationId);
 }

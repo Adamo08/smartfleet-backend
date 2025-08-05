@@ -8,6 +8,6 @@ import java.math.BigDecimal;
 @Data
 public class RefundRequestDto {
     private Long paymentId;
-    private BigDecimal amount;
+    private long amount;
     private String reason;
 }
