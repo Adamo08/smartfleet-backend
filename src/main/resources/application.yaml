@@ -22,6 +22,8 @@ stripe:
     webhookSecret: ${STRIPE_WEBHOOK_SECRET}
 
 paypal:
+  api:
+        baseUrl: https://api-m.sandbox.paypal.com # Change to https://api-m.paypal.com for live
   client:
     id: ${PAYPAL_CLIENT_ID}
     secret: ${PAYPAL_CLIENT_SECRET}
