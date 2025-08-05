@@ -19,7 +19,8 @@ spring:
 stripe:
   api:
     secretKey: ${STRIPE_SECRET_KEY}
-    webhookSecret: ${STRIPE_WEBHOOK_SECRET}
+  webhook:
+        secret: ${STRIPE_WEBHOOK_SECRET}
 
 paypal:
   api:
@@ -28,6 +29,9 @@ paypal:
     id: ${PAYPAL_CLIENT_ID}
     secret: ${PAYPAL_CLIENT_SECRET}
   mode: ${PAYPAL_MODE} # sandbox or live
+  webhook:
+    id: ${PAYPAL_WEBHOOK_ID}
+    secret: ${PAYPAL_WEBHOOK_SECRET}
 
 payment:
   provider: stripe # or paypal
