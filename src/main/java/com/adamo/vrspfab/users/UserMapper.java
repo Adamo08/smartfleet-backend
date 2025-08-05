@@ -12,5 +12,9 @@ public interface UserMapper {
     @Mapping(target = "lastName", source = "lastName")
     @Mapping(target = "phoneNumber", source = "phoneNumber")
     User toEntity(RegisterUserRequest request);
+
+
+    User toEntity(UserDto userDto);
+
     void update(UpdateUserRequest request, @MappingTarget User user);
 }

@@ -7,6 +7,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.Set;
 
 @AllArgsConstructor
@@ -29,6 +30,10 @@ public class UserService {
     public UserDto getUser(Long userId) {
         var user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
         return userMapper.toDto(user);
+    }
+
+    public Optional<User> getUserById(Long userId) {
+        return userRepository.findById(userId);
     }
 
     public UserDto registerUser(RegisterUserRequest request) {

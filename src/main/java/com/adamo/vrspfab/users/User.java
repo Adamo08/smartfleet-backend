@@ -1,6 +1,10 @@
 package com.adamo.vrspfab.users;
 
-import com.adamo.vrspfab.entities.*;
+import com.adamo.vrspfab.bookmarks.Bookmark;
+import com.adamo.vrspfab.favorites.Favorite;
+import com.adamo.vrspfab.notifications.Notification;
+import com.adamo.vrspfab.reservations.Reservation;
+import com.adamo.vrspfab.testimonials.Testimonial;
 import jakarta.persistence.*;
 import lombok.*;
 
