@@ -25,9 +25,16 @@ public class TestimonialService {
 
     @Transactional
     public TestimonialDto createTestimonial(TestimonialDto testimonialDto) {
+
+        System.out.println("Creating testimonial: " + testimonialDto);
+
         User user = userService.getUserById(testimonialDto.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         Vehicle vehicle = vehicleService.getVehicleById(testimonialDto.getVehicleId());
+
+        if (vehicle == null) {
+            throw new ResourceNotFoundException("Vehicle not found");
+        }
 
         Testimonial testimonial = testimonialMapper.toEntity(testimonialDto);
         testimonial.setUser(user);

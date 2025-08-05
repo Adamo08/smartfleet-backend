@@ -1,5 +1,6 @@
 package com.adamo.vrspfab.bookmarks;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,7 @@ public class BookmarkController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public BookmarkDto createBookmark(@RequestBody BookmarkDto bookmarkDTO) {
+    public BookmarkDto createBookmark(@Valid @RequestBody BookmarkDto bookmarkDTO) {
         return bookmarkService.createBookmark(bookmarkDTO);
     }
 
