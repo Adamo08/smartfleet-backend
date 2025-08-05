@@ -1,4 +1,4 @@
 package com.adamo.vrspfab.payments;
 
-public class RefundRepository {
+public class DisputeRequestDto {
 }
