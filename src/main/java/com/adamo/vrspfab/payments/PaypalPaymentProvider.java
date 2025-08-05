@@ -12,6 +12,7 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @RequiredArgsConstructor
 @Service("paypalPaymentProvider")
@@ -20,13 +21,13 @@ public class PaypalPaymentProvider implements PaymentProvider {
     private final APIContext apiContext;
     private final PaymentRepository paymentRepository;
     private final RefundRepository refundRepository;
-    private final DisputeRepository disputeRepository;
 
-    private static final int MAX_RETRIES = 3;
+    private static final Set<String> VALID_CURRENCIES = Set.of("USD", "EUR", "GBP", "AUD", "CAD");
 
     @Override
     @Transactional
     public PaymentResponseDto processPayment(PaymentRequestDto requestDto) {
+        validateRequest(requestDto.getAmount(), requestDto.getCurrency());
         try {
             Payment payment = paymentRepository.findByReservationId(requestDto.getReservationId())
                     .orElseThrow(() -> new IllegalArgumentException("Payment not found for reservation ID: " + requestDto.getReservationId()));
@@ -36,7 +37,8 @@ public class PaypalPaymentProvider implements PaymentProvider {
                     requestDto.getCurrency(),
                     "Reservation payment for ID: " + requestDto.getReservationId(),
                     null,
-                    null);
+                    null,
+                    "sale");
 
             com.paypal.api.payments.Payment createdPayment = retry(() -> paypalPayment.create(apiContext));
             if (createdPayment == null || createdPayment.getId() == null) {
@@ -61,13 +63,15 @@ public class PaypalPaymentProvider implements PaymentProvider {
 
     @Override
     public SessionResponseDto createPaymentSession(SessionRequestDto requestDto) {
+        validateRequest(requestDto.getAmount(), requestDto.getCurrency());
         try {
             com.paypal.api.payments.Payment paypalPayment = createPaypalPayment(
                     requestDto.getAmount(),
                     requestDto.getCurrency(),
                     "Reservation checkout for ID: " + requestDto.getReservationId(),
                     requestDto.getSuccessUrl(),
-                    requestDto.getCancelUrl());
+                    requestDto.getCancelUrl(),
+                    "sale");
 
             com.paypal.api.payments.Payment createdPayment = retry(() -> paypalPayment.create(apiContext));
             if (createdPayment == null || createdPayment.getId() == null) {
@@ -105,6 +109,7 @@ public class PaypalPaymentProvider implements PaymentProvider {
     @Override
     @Transactional
     public RefundResponseDto processRefund(RefundRequestDto requestDto) {
+        validateRequest(requestDto.getAmount(), null);
         try {
             Payment payment = paymentRepository.findWithDetailsById(requestDto.getPaymentId())
                     .orElseThrow(() -> new IllegalArgumentException("Payment not found: " + requestDto.getPaymentId()));
@@ -138,21 +143,12 @@ public class PaypalPaymentProvider implements PaymentProvider {
         }
     }
 
-    @Override
-    @Transactional
-    public DisputeResponseDto handleDispute(DisputeRequestDto requestDto) {
-        try {
-            Payment payment = paymentRepository.findWithDetailsById(requestDto.getPaymentId())
-                    .orElseThrow(() -> new IllegalArgumentException("Payment not found: " + requestDto.getPaymentId()));
-            Dispute dispute = new Dispute();
-            dispute.setPayment(payment);
-            dispute.setReason(requestDto.getReason());
-            dispute.setStatus(DisputeStatus.UNDER_REVIEW);
-            dispute = disputeRepository.save(dispute);
-            // PayPal Disputes API requires disputeId from webhooks; placeholder for now
-            return new DisputeResponseDto(dispute.getId(), DisputeStatus.UNDER_REVIEW);
-        } catch (Exception e) {
-            throw new PaymentException("PayPal dispute handling failed: " + e.getMessage());
+    private void validateRequest(double amount, String currency) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
+        if (currency != null && !VALID_CURRENCIES.contains(currency.toUpperCase())) {
+            throw new IllegalArgumentException("Invalid currency: " + currency + ". Must be one of " + VALID_CURRENCIES);
         }
     }
 
@@ -173,12 +169,13 @@ public class PaypalPaymentProvider implements PaymentProvider {
         }
         return switch (paypalRefundState.toLowerCase()) {
             case "completed" -> RefundStatus.PROCESSED.toString();
+            case "pending" -> RefundStatus.PENDING.toString();
             case "failed" -> RefundStatus.FAILED.toString();
             default -> RefundStatus.PENDING.toString();
         };
     }
 
-    private com.paypal.api.payments.Payment createPaypalPayment(double amount, String currency, String description, String successUrl, String cancelUrl) {
+    private com.paypal.api.payments.Payment createPaypalPayment(double amount, String currency, String description, String successUrl, String cancelUrl, String intent) {
         Amount paypalAmount = new Amount();
         paypalAmount.setCurrency(currency);
         paypalAmount.setTotal(BigDecimal.valueOf(amount).setScale(2, RoundingMode.HALF_UP).toString());
@@ -190,15 +187,11 @@ public class PaypalPaymentProvider implements PaymentProvider {
         List<Transaction> transactions = new ArrayList<>();
         transactions.add(transaction);
 
-        return getPaypalPayment(successUrl, cancelUrl, transactions);
-    }
-
-    private static com.paypal.api.payments.Payment getPaypalPayment(String successUrl, String cancelUrl, List<Transaction> transactions) {
         Payer payer = new Payer();
         payer.setPaymentMethod("paypal");
 
         com.paypal.api.payments.Payment paypalPayment = new com.paypal.api.payments.Payment();
-        paypalPayment.setIntent("sale");
+        paypalPayment.setIntent(intent);
         paypalPayment.setPayer(payer);
         paypalPayment.setTransactions(transactions);
 
@@ -208,17 +201,18 @@ public class PaypalPaymentProvider implements PaymentProvider {
             redirectUrls.setCancelUrl(cancelUrl);
             paypalPayment.setRedirectUrls(redirectUrls);
         }
+
         return paypalPayment;
     }
 
     private <T> T retry(PaypalOperation<T> operation) throws PayPalRESTException {
         int attempts = 0;
-        while (attempts < MAX_RETRIES) {
+        while (attempts < 3) {
             try {
                 return operation.execute();
             } catch (PayPalRESTException e) {
                 attempts++;
-                if (attempts >= MAX_RETRIES) throw e;
+                if (attempts >= 3) throw e;
                 try {
                     Thread.sleep(1000L * attempts); // Exponential backoff
                 } catch (InterruptedException ignored) {}

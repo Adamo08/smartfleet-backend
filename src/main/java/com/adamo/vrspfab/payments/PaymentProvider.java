@@ -33,12 +33,4 @@ public interface PaymentProvider {
      * @return the refund response data transfer object
      */
     RefundResponseDto processRefund(RefundRequestDto requestDto);
-
-    /**
-     * Handles a dispute request.
-     *
-     * @param requestDto the dispute request data transfer object
-     * @return the dispute response data transfer object
-     */
-    DisputeResponseDto handleDispute(DisputeRequestDto requestDto);
 }

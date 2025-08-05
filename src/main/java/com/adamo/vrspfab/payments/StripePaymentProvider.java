@@ -124,27 +124,6 @@ public class StripePaymentProvider implements PaymentProvider {
         }
     }
 
-    @Override
-    @Transactional
-    public DisputeResponseDto handleDispute(DisputeRequestDto requestDto) {
-        try {
-            Payment payment = paymentRepository.findWithDetailsById(requestDto.getPaymentId())
-                    .orElseThrow(() -> new IllegalArgumentException("Payment not found: " + requestDto.getPaymentId()));
-            com.stripe.model.Dispute stripeDispute = com.stripe.model.Dispute.retrieve(payment.getTransactionId());
-            stripeDispute.update(java.util.Map.of("evidence", java.util.Map.of(
-                    "customer_communication", requestDto.getEvidence(),
-                    "product_description", "Vehicle reservation for ID: " + payment.getReservation().getId()
-            )));
-            Dispute dispute = new Dispute();
-            dispute.setPayment(payment);
-            dispute.setReason(requestDto.getReason());
-            dispute.setStatus(DisputeStatus.UNDER_REVIEW);
-            dispute = disputeRepository.save(dispute);
-            return new DisputeResponseDto(dispute.getId(), DisputeStatus.valueOf(stripeDispute.getStatus()));
-        } catch (StripeException e) {
-            throw new PaymentException("Stripe dispute handling failed: " + e.getMessage());
-        }
-    }
 
     private com.adamo.vrspfab.payments.PaymentStatus mapStripeStatus(String stripeStatus) {
         return switch (stripeStatus.toLowerCase()) {
