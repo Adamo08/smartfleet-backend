@@ -2,6 +2,8 @@ package com.adamo.vrspfab.common;
 
 import com.adamo.vrspfab.bookmarks.DuplicateBookmarkException;
 import com.adamo.vrspfab.favorites.DuplicateFavoriteException;
+import com.adamo.vrspfab.slots.InvalidSlotStateException;
+import com.adamo.vrspfab.slots.InvalidSlotTimeException;
 import com.adamo.vrspfab.testimonials.DuplicateTestimonialException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -146,6 +148,7 @@ public class GlobalExceptionHandler {
         );
     }
 
+
     /**
      * Handles DuplicateBookmarkException, returning a 409 Conflict status.
      * This is used when a user tries to bookmark the same vehicle multiple times.
@@ -164,6 +167,46 @@ public class GlobalExceptionHandler {
                 request.getDescription(false).replace("uri=", "")
         );
     }
+
+
+    /**
+     * Handles InvalidSlotStateException, returning a 400 Bad Request status.
+     * This is used when a slot operation is attempted on a slot that is not in the expected state.
+     * @param ex The InvalidSlotStateException.
+     * @param request The WebRequest.
+     * @return ResponseEntity containing the error details.
+     */
+    @ExceptionHandler(InvalidSlotStateException.class)
+    public ResponseEntity<ErrorDto> handleInvalidSlotStateException(
+            InvalidSlotStateException ex, WebRequest request
+    ) {
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST, // 400 Bad Request
+                "Bad Request",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
+    /**
+     * Handles InvalidSlotTimeException, returning a 400 Bad Request status.
+     * This is used when slot start and end times are invalid or conflict with existing slots.
+     * @param ex The InvalidSlotTimeException.
+     * @param request The WebRequest.
+     * @return ResponseEntity containing the error details.
+     */
+    @ExceptionHandler(InvalidSlotTimeException.class)
+    public ResponseEntity<ErrorDto> handleInvalidSlotTimeException(
+            InvalidSlotTimeException ex, WebRequest request
+    ) {
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST, // 400 Bad Request
+                "Bad Request",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
 
     /**
      * Builds an error response entity with the provided details.
