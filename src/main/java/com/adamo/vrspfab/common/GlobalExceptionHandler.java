@@ -1,11 +1,14 @@
 package com.adamo.vrspfab.common;
 
+import com.adamo.vrspfab.testimonials.DuplicateTestimonialException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -44,6 +47,82 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(errors);
     }
 
+    /**
+     * Handles ResourceNotFoundException, returning a 404 Not Found status.
+     * Provides a specific message indicating which resource type was not found.
+     * @param ex The ResourceNotFoundException.
+     * @param request The WebRequest.
+     * @return ResponseEntity containing the error details.
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorDto> handleResourceNotFoundException(
+            ResourceNotFoundException ex, WebRequest request
+    ) {
+        String errorMessage = ex.getResourceType() + " not found: " + ex.getMessage();
+        return buildErrorResponse(
+                HttpStatus.NOT_FOUND,
+                "Not Found",
+                errorMessage,
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
+    /**
+     * Handles IllegalStateException, returning a 400 Bad Request status.
+     * Useful for business logic violations (e.g., trying to approve an already approved testimonial).
+     * @param ex The IllegalStateException.
+     * @param request The WebRequest.
+     * @return ResponseEntity containing the error details.
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorDto> handleIllegalStateException(
+            IllegalStateException ex, WebRequest request
+    ) {
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                "Bad Request",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
+    /**
+     * Handles AccessDeniedException, returning a 403 Forbidden status.
+     * This provides a consistent error response for authorization failures.
+     * @param ex The AccessDeniedException.
+     * @param request The WebRequest.
+     * @return ResponseEntity containing the error details.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorDto> handleAccessDeniedException(
+            AccessDeniedException ex, WebRequest request
+    ) {
+        return buildErrorResponse(
+                HttpStatus.FORBIDDEN,
+                "Forbidden",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
+    /**
+     * Handles DuplicateTestimonialException, returning a 409 Conflict status.
+     * This is used when a user tries to submit multiple testimonials for the same vehicle.
+     * @param ex The DuplicateTestimonialException.
+     * @param request The WebRequest.
+     * @return ResponseEntity containing the error details.
+     */
+    @ExceptionHandler(DuplicateTestimonialException.class)
+    public ResponseEntity<ErrorDto> handleDuplicateTestimonialException(
+            DuplicateTestimonialException ex, WebRequest request
+    ) {
+        return buildErrorResponse(
+                HttpStatus.CONFLICT, // 409 Conflict is appropriate for duplicate resource creation
+                "Conflict",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
 
 
     /**
