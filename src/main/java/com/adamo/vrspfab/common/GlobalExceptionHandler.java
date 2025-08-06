@@ -1,5 +1,6 @@
 package com.adamo.vrspfab.common;
 
+import com.adamo.vrspfab.bookmarks.DuplicateBookmarkException;
 import com.adamo.vrspfab.favorites.DuplicateFavoriteException;
 import com.adamo.vrspfab.testimonials.DuplicateTestimonialException;
 import org.springframework.http.HttpStatus;
@@ -145,6 +146,24 @@ public class GlobalExceptionHandler {
         );
     }
 
+    /**
+     * Handles DuplicateBookmarkException, returning a 409 Conflict status.
+     * This is used when a user tries to bookmark the same vehicle multiple times.
+     * @param ex The DuplicateBookmarkException.
+     * @param request The WebRequest.
+     * @return ResponseEntity containing the error details.
+     */
+    @ExceptionHandler(DuplicateBookmarkException.class)
+    public ResponseEntity<ErrorDto> handleDuplicateBookmarkException(
+            DuplicateBookmarkException ex, WebRequest request
+    ) {
+        return buildErrorResponse(
+                HttpStatus.CONFLICT, // 409 Conflict is appropriate for duplicate resource creation
+                "Conflict",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
 
     /**
      * Builds an error response entity with the provided details.

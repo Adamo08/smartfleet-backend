@@ -11,8 +11,16 @@ public class BookmarkSecurityRules implements SecurityRules {
     @Override
     public void configure(AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry registry) {
         registry
-                .requestMatchers(HttpMethod.GET, "/bookmarks/**").authenticated()
+                // Authenticated users can view their OWN bookmarks
+                .requestMatchers(HttpMethod.GET, "/bookmarks/my").authenticated()
+                // Specific bookmark by ID: Authenticated user (owner or admin)
+                // The fine-grained access control for /bookmarks/{id} is handled in BookmarkService
+                .requestMatchers(HttpMethod.GET, "/bookmarks/{id}").authenticated()
+                // Only ADMINs can view all bookmarks (with filters)
+                .requestMatchers(HttpMethod.GET, "/bookmarks").hasRole("ADMIN")
+                // Customers can create bookmarks (service will ensure it's for themselves and not a duplicate)
                 .requestMatchers(HttpMethod.POST, "/bookmarks").hasRole("CUSTOMER")
-                .requestMatchers(HttpMethod.DELETE, "/bookmarks/**").hasRole("CUSTOMER");
+                // Authenticated users (owner or admin) can delete bookmarks (service will ensure ownership/admin)
+                .requestMatchers(HttpMethod.DELETE, "/bookmarks/**").authenticated();
     }
 }
