@@ -11,6 +11,7 @@ public class TestimonialSecurityRules implements SecurityRules {
     @Override
     public void configure(AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry registry) {
         registry
+                .requestMatchers(HttpMethod.GET, "/testimonials/public/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/testimonials/**").authenticated()
                 .requestMatchers(HttpMethod.POST, "/testimonials").hasRole("CUSTOMER")
                 .requestMatchers(HttpMethod.PUT, "/testimonials/**").hasRole("ADMIN")
