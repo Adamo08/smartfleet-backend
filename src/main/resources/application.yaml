@@ -36,3 +36,8 @@ paypal:
 payment:
   provider: stripe # or paypal
 
+
+logging:
+  level:
+    com.adamo.vrspfab: TRACE
+
