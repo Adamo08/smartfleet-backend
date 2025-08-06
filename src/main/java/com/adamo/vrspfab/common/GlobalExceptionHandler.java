@@ -1,5 +1,6 @@
 package com.adamo.vrspfab.common;
 
+import com.adamo.vrspfab.favorites.DuplicateFavoriteException;
 import com.adamo.vrspfab.testimonials.DuplicateTestimonialException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -115,6 +116,26 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateTestimonialException.class)
     public ResponseEntity<ErrorDto> handleDuplicateTestimonialException(
             DuplicateTestimonialException ex, WebRequest request
+    ) {
+        return buildErrorResponse(
+                HttpStatus.CONFLICT, // 409 Conflict is appropriate for duplicate resource creation
+                "Conflict",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
+
+    /**
+     * Handles DuplicateFavoriteException, returning a 409 Conflict status.
+     * This is used when a user tries to favorite the same vehicle multiple times.
+     * @param ex The DuplicateFavoriteException.
+     * @param request The WebRequest.
+     * @return ResponseEntity containing the error details.
+     */
+    @ExceptionHandler(DuplicateFavoriteException.class)
+    public ResponseEntity<ErrorDto> handleDuplicateFavoriteException(
+            DuplicateFavoriteException ex, WebRequest request
     ) {
         return buildErrorResponse(
                 HttpStatus.CONFLICT, // 409 Conflict is appropriate for duplicate resource creation
