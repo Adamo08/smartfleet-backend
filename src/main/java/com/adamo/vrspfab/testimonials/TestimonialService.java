@@ -1,6 +1,7 @@
 package com.adamo.vrspfab.testimonials;
 
 import com.adamo.vrspfab.common.ResourceNotFoundException;
+import com.adamo.vrspfab.common.SecurityUtilsService;
 import com.adamo.vrspfab.users.User;
 import com.adamo.vrspfab.users.UserService;
 import com.adamo.vrspfab.vehicles.Vehicle;
@@ -14,8 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.access.AccessDeniedException;
 import com.adamo.vrspfab.users.Role;
 
@@ -32,39 +31,14 @@ public class TestimonialService {
     private final TestimonialMapper testimonialMapper;
     private final UserService userService;
     private final VehicleService vehicleService;
+    private SecurityUtilsService securityUtilsService;
 
-    /**
-     * Helper method to get the currently authenticated user.
-     * It retrieves the user's ID from the security context and fetches the User entity.
-     * @return The authenticated User entity.
-     * @throws AccessDeniedException if user is not authenticated or not found in the database.
-     */
-    private User getCurrentAuthenticatedUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
-            logger.warn("Attempted operation by unauthenticated user.");
-            throw new AccessDeniedException("User not authenticated.");
-        }
-        Long userId;
-        try {
-            userId = (Long) authentication.getPrincipal();
-        } catch (ClassCastException e) {
-            logger.error("Authentication principal is not a Long ID: {}", authentication.getPrincipal(), e);
-            throw new AccessDeniedException("Invalid authentication principal type.");
-        }
-
-        return userService.getUserById(userId)
-                .orElseThrow(() -> {
-                    logger.error("Authenticated user with ID '{}' not found in database.", userId);
-                    return new AccessDeniedException("Authenticated user not found in database.");
-                });
-    }
 
     @Transactional
     public TestimonialDto createTestimonial(TestimonialDto testimonialDto) {
         logger.info("Attempting to create testimonial: {}", testimonialDto);
 
-        User authenticatedUser = getCurrentAuthenticatedUser();
+        User authenticatedUser = securityUtilsService.getCurrentAuthenticatedUser();
         // Ensure the user is creating a testimonial for themselves
         if (!authenticatedUser.getId().equals(testimonialDto.getUserId())) {
             logger.warn("User {} attempted to create testimonial for user ID {}. Access denied.", authenticatedUser.getId(), testimonialDto.getUserId());
@@ -118,7 +92,7 @@ public class TestimonialService {
                     return new ResourceNotFoundException("Testimonial not found with ID: " + id, "Testimonial");
                 });
 
-        User authenticatedUser = getCurrentAuthenticatedUser();
+        User authenticatedUser = securityUtilsService.getCurrentAuthenticatedUser();
         boolean isAdmin = authenticatedUser.getRole().equals(Role.ADMIN);
         boolean isOwner = testimonial.getUser().getId().equals(authenticatedUser.getId());
 
@@ -245,7 +219,7 @@ public class TestimonialService {
 
     @Transactional(readOnly = true)
     public Page<TestimonialDto> getMyTestimonials(int page, int size, String sortBy, String sortDirection) {
-        User authenticatedUser = getCurrentAuthenticatedUser();
+        User authenticatedUser = securityUtilsService.getCurrentAuthenticatedUser();
         Sort.Direction direction = Sort.Direction.fromString(sortDirection.toUpperCase());
         Sort sort = Sort.by(direction, sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
