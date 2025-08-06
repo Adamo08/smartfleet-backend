@@ -2,12 +2,17 @@ package com.adamo.vrspfab.slots;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingConstants; // Import for MappingConstants.ComponentModel.SPRING
 
 @Mapper(componentModel = "spring")
 public interface SlotMapper {
     @Mapping(target = "vehicleId", source = "vehicle.id")
+    @Mapping(target = "vehicleBrand", source = "vehicle.brand")
+    @Mapping(target = "vehicleModel", source = "vehicle.model")
     SlotDto toDto(Slot slot);
 
     @Mapping(target = "vehicle.id", source = "vehicleId")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Slot toEntity(SlotDto slotDTO);
 }

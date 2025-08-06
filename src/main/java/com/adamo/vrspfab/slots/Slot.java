@@ -7,6 +7,10 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 @Entity
 @Table(name = "slots")
 @AllArgsConstructor
@@ -30,25 +34,17 @@ public class Slot {
     private LocalDateTime endTime;
 
     @Column(name = "is_available", nullable = false)
-    private boolean isAvailable;
+    private boolean available;
 
     @OneToOne(mappedBy = "slot")
     private Reservation reservation;
 
+    @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }
