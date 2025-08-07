@@ -12,4 +12,8 @@ public interface ReservationMapper {
     @Mapping(target = "user.id", source = "userId")
     @Mapping(target = "vehicle.id", source = "vehicleId")
     Reservation toEntity(ReservationDto reservationDto);
+
+    @Mapping(target = "user", source = "user")
+    @Mapping(target = "vehicle", source = "vehicle")
+    ReservationInfoForVehicleDto toReservationInfoDto(Reservation reservation);
 }

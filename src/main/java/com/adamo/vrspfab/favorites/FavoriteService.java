@@ -5,6 +5,7 @@ import com.adamo.vrspfab.common.SecurityUtilsService;
 import com.adamo.vrspfab.users.User;
 import com.adamo.vrspfab.users.UserService;
 import com.adamo.vrspfab.vehicles.Vehicle;
+import com.adamo.vrspfab.vehicles.VehicleMapper;
 import com.adamo.vrspfab.vehicles.VehicleService;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -33,6 +34,7 @@ public class FavoriteService {
     private final FavoriteMapper favoriteMapper;
     private final UserService userService;
     private final VehicleService vehicleService;
+    private final VehicleMapper vehicleMapper;
     private final SecurityUtilsService securityUtilsService;
 
 
@@ -53,7 +55,8 @@ public class FavoriteService {
                     return new ResourceNotFoundException("User not found with ID: " + favoriteDto.getUserId(), "User");
                 });
 
-        Vehicle vehicle = vehicleService.getVehicleById(favoriteDto.getVehicleId());
+        var vehicleDto = vehicleService.getVehicleById(favoriteDto.getVehicleId());
+        Vehicle vehicle = vehicleMapper.toEntity(vehicleDto);
         if (vehicle == null) {
             logger.warn("Vehicle not found with ID: {}", favoriteDto.getVehicleId());
             throw new ResourceNotFoundException("Vehicle not found with ID: " + favoriteDto.getVehicleId(), "Vehicle");

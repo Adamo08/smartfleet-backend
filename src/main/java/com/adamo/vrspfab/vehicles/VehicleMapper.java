@@ -1,21 +1,37 @@
 package com.adamo.vrspfab.vehicles;
-
-
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
-@Mapper(componentModel = "spring")
+@Mapper(
+        componentModel = "spring",
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
+)
 public interface VehicleMapper {
-    @Mapping(target = "vehicleType", source = "vehicleType")
-    @Mapping(target = "fuelType", source = "fuelType")
-    @Mapping(target = "status", source = "status")
+
     VehicleDto toDto(Vehicle vehicle);
 
-    @Mapping(target = "vehicleType", source = "vehicleType")
-    @Mapping(target = "fuelType", source = "fuelType")
-    @Mapping(target = "status", source = "status")
-    Vehicle toEntity(VehicleDto vehicleDTO);
+    @Mapping(target = "slots", ignore = true)
+    @Mapping(target = "favorites", ignore = true)
+    @Mapping(target = "reservations", ignore = true)
+    @Mapping(target = "testimonials", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    Vehicle toEntity(VehicleDto vehicleDto);
 
-    void updateVehicleFromDto(VehicleDto vehicleDto, @MappingTarget Vehicle vehicle);
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "slots", ignore = true)
+    @Mapping(target = "favorites", ignore = true)
+    @Mapping(target = "reservations", ignore = true)
+    @Mapping(target = "testimonials", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    void updateVehicleFromDto(VehicleDto dto, @MappingTarget Vehicle entity);
+
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "brand", source = "brand")
+    @Mapping(target = "model", source = "model")
+    @Mapping(target = "licensePlate", source = "licensePlate")
+    VehicleSummaryDto toSummaryDto(Vehicle vehicle);
 }
