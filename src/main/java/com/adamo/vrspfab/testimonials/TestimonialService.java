@@ -5,6 +5,7 @@ import com.adamo.vrspfab.common.SecurityUtilsService;
 import com.adamo.vrspfab.users.User;
 import com.adamo.vrspfab.users.UserService;
 import com.adamo.vrspfab.vehicles.Vehicle;
+import com.adamo.vrspfab.vehicles.VehicleMapper;
 import com.adamo.vrspfab.vehicles.VehicleService;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,6 +32,7 @@ public class TestimonialService {
     private final TestimonialMapper testimonialMapper;
     private final UserService userService;
     private final VehicleService vehicleService;
+    private final VehicleMapper vehicleMapper;
     private SecurityUtilsService securityUtilsService;
 
 
@@ -53,7 +55,10 @@ public class TestimonialService {
 
         Vehicle vehicle = null;
         if (testimonialDto.getVehicleId() != null) {
-            vehicle = vehicleService.getVehicleById(testimonialDto.getVehicleId());
+            var vehicleDto = vehicleService.getVehicleById(testimonialDto.getVehicleId());
+
+            vehicle = vehicleMapper.toEntity(vehicleDto);
+
             if (vehicle == null) {
                 logger.warn("Vehicle not found with ID: {}", testimonialDto.getVehicleId());
                 throw new ResourceNotFoundException("Vehicle not found with ID: " + testimonialDto.getVehicleId(), "Vehicle");

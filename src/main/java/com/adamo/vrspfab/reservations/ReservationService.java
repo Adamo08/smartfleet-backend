@@ -3,6 +3,7 @@ package com.adamo.vrspfab.reservations;
 import com.adamo.vrspfab.common.ResourceNotFoundException;
 import com.adamo.vrspfab.slots.SlotConflictException;
 import com.adamo.vrspfab.users.UserMapper;
+import com.adamo.vrspfab.vehicles.VehicleMapper;
 import com.adamo.vrspfab.vehicles.VehicleService;
 import com.adamo.vrspfab.users.UserService;
 import lombok.AllArgsConstructor;
@@ -22,6 +23,7 @@ public class ReservationService {
     private final VehicleService vehicleService;
     private final ReservationMapper reservationMapper;
     private final UserMapper userMapper;
+    private final VehicleMapper vehicleMapper;
 
     @Transactional
     public ReservationDto createReservation(ReservationDto reservationDto) {
@@ -39,7 +41,7 @@ public class ReservationService {
 
         Reservation reservation = reservationMapper.toEntity(reservationDto);
         reservation.setUser(userMapper.toEntity(user));
-        reservation.setVehicle(vehicle);
+        reservation.setVehicle(vehicleMapper.toEntity(vehicle));
         reservation.setStatus(ReservationStatus.PENDING); // Default status
         return reservationMapper.toDto(reservationRepository.save(reservation));
     }

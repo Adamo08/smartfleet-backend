@@ -58,6 +58,7 @@ public class User {
     // Bidirectional relationships
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    @ToString.Exclude
     private Set<Favorite> favorites = new HashSet<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -73,7 +74,6 @@ public class User {
     private Set<Reservation> reservations = new HashSet<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
     private Set<Testimonial> testimonials = new HashSet<>();
 
     @PrePersist

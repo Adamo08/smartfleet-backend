@@ -2,6 +2,7 @@ package com.adamo.vrspfab.slots;
 
 import com.adamo.vrspfab.common.ResourceNotFoundException;
 import com.adamo.vrspfab.common.SecurityUtilsService;
+import com.adamo.vrspfab.vehicles.VehicleMapper;
 import com.adamo.vrspfab.vehicles.VehicleService;
 import com.adamo.vrspfab.users.Role;
 import lombok.AllArgsConstructor;
@@ -29,6 +30,7 @@ public class SlotService {
     private final SlotMapper slotMapper;
     private final VehicleService vehicleService;
     private final SecurityUtilsService securityUtilsService; // Inject SecurityUtilsService
+    private final VehicleMapper vehicleMapper;
 
     @Transactional
     public SlotDto createSlot(SlotDto slotDto) {
@@ -59,7 +61,7 @@ public class SlotService {
         }
 
         Slot slot = slotMapper.toEntity(slotDto);
-        slot.setVehicle(vehicleService.getVehicleById(slotDto.getVehicleId())); // Ensure vehicle exists
+        slot.setVehicle(vehicleMapper.toEntity(vehicleService.getVehicleById(slotDto.getVehicleId())));
         slot.setAvailable(true); // Default to available on creation
 
         Slot savedSlot = slotRepository.save(slot);

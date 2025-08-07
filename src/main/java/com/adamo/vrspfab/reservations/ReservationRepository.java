@@ -1,6 +1,8 @@
 package com.adamo.vrspfab.reservations;
 
 import com.adamo.vrspfab.reservations.Reservation;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -28,4 +30,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             "((r.startDate <= :endDate AND r.endDate >= :startDate) OR " +
             "(r.startDate >= :startDate AND r.endDate <= :endDate))")
     Optional<Reservation> findOverlappingReservations(Long vehicleId, LocalDateTime startDate, LocalDateTime endDate);
+
+
+    @EntityGraph(attributePaths = {"user", "vehicle"}, type = EntityGraph.EntityGraphType.LOAD)
+    @Query("SELECT r FROM Reservation r WHERE r.vehicle.id = :vehicleId")
+    Page<Reservation> findByVehicleId(Long vehicleId, Pageable pageable);
 }
