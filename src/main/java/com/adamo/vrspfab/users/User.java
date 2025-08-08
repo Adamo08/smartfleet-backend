@@ -3,6 +3,7 @@ package com.adamo.vrspfab.users;
 import com.adamo.vrspfab.bookmarks.Bookmark;
 import com.adamo.vrspfab.favorites.Favorite;
 import com.adamo.vrspfab.notifications.Notification;
+import com.adamo.vrspfab.notifications.UserNotificationPreferences;
 import com.adamo.vrspfab.reservations.Reservation;
 import com.adamo.vrspfab.testimonials.Testimonial;
 import jakarta.persistence.*;
@@ -68,6 +69,9 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<Notification> notifications = new HashSet<>();
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private UserNotificationPreferences notificationPreferences;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

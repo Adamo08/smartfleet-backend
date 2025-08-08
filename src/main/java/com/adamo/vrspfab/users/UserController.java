@@ -58,12 +58,6 @@ public class UserController {
         userService.changePassword(id, request);
     }
 
-    @ExceptionHandler(DuplicateUserException.class)
-    public ResponseEntity<Map<String, String>> handleDuplicateUser() {
-        return ResponseEntity.badRequest().body(
-                Map.of("email", "Email is already registered.")
-        );
-    }
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<Void> handleUserNotFound() {
