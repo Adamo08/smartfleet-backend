@@ -1,6 +1,7 @@
 package com.adamo.vrspfab.users;
 
 
+import com.adamo.vrspfab.common.DuplicateFieldException;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
@@ -38,7 +39,11 @@ public class UserService {
 
     public UserDto registerUser(RegisterUserRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateUserException();
+            throw new DuplicateFieldException("Email already exists");
+        }
+
+        if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+            throw new DuplicateFieldException("Phone number already exists");
         }
 
         var user = userMapper.toEntity(request);

@@ -2,6 +2,7 @@ package com.adamo.vrspfab.common;
 
 import com.adamo.vrspfab.bookmarks.DuplicateBookmarkException;
 import com.adamo.vrspfab.favorites.DuplicateFavoriteException;
+import com.adamo.vrspfab.notifications.NotificationNotFoundException;
 import com.adamo.vrspfab.slots.InvalidSlotStateException;
 import com.adamo.vrspfab.slots.InvalidSlotTimeException;
 import com.adamo.vrspfab.testimonials.DuplicateTestimonialException;
@@ -142,6 +143,29 @@ public class GlobalExceptionHandler {
                 request.getDescription(false).replace("uri=", "")
         );
     }
+
+
+    /**
+     * Handles DuplicateFieldException, returning a 409 Conflict status.
+     *
+     * @param ex The DuplicateFieldException.
+     * @param request The WebRequest.
+     * @return ResponseEntity containing the error details.
+     */
+    @ExceptionHandler(DuplicateFieldException.class)
+    public ResponseEntity<ErrorDto> handleDuplicateFieldException(
+            DuplicateFieldException ex, WebRequest request
+    ) {
+        log.warn("Duplicate field error: {}", ex.getMessage());
+        return buildErrorResponse(
+                HttpStatus.CONFLICT,
+                "Conflict",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
+
 
     /**
      * Handles DuplicateBookmarkException, returning a 409 Conflict status.
@@ -342,6 +366,28 @@ public class GlobalExceptionHandler {
                 request.getDescription(false).replace("uri=", "")
         );
     }
+
+
+    /**
+     * Handles NotificationNotFoundException, returning a 404 Not Found status.
+     *
+     * @param ex The NotificationNotFoundException.
+     * @param request The WebRequest.
+     * @return ResponseEntity containing the error details.
+     */
+    @ExceptionHandler(NotificationNotFoundException.class)
+    public ResponseEntity<ErrorDto> handleNotificationNotFoundException(
+            NotificationNotFoundException ex, WebRequest request
+    ) {
+        log.warn("Notification not found: {}", ex.getMessage());
+        return buildErrorResponse(
+                HttpStatus.NOT_FOUND,
+                "Not Found",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
 
     /**
      * Builds an error response entity with the provided details.
