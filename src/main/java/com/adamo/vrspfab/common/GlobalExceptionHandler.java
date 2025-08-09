@@ -3,6 +3,8 @@ package com.adamo.vrspfab.common;
 import com.adamo.vrspfab.bookmarks.DuplicateBookmarkException;
 import com.adamo.vrspfab.favorites.DuplicateFavoriteException;
 import com.adamo.vrspfab.notifications.NotificationNotFoundException;
+import com.adamo.vrspfab.reservations.ReservationBusinessException;
+import com.adamo.vrspfab.reservations.ReservationConflictException;
 import com.adamo.vrspfab.slots.InvalidSlotStateException;
 import com.adamo.vrspfab.slots.InvalidSlotTimeException;
 import com.adamo.vrspfab.testimonials.DuplicateTestimonialException;
@@ -387,6 +389,50 @@ public class GlobalExceptionHandler {
                 request.getDescription(false).replace("uri=", "")
         );
     }
+
+
+
+    /**
+     * Handles all reservation-specific business exceptions, returning a 400 Bad Request.
+     * This serves as a catch-all for reservation logic errors that are not handled more specifically.
+     *
+     * @param ex The ReservationBusinessException.
+     * @param request The WebRequest.
+     * @return ResponseEntity containing the error details.
+     */
+    @ExceptionHandler(ReservationBusinessException.class)
+    public ResponseEntity<ErrorDto> handleReservationBusinessException(
+            ReservationBusinessException ex, WebRequest request
+    ) {
+        log.warn("Reservation business error: {}", ex.getMessage());
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                "Bad Request",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
+    /**
+     * Handles ReservationConflictException, returning a 409 Conflict status.
+     *
+     * @param ex The ReservationConflictException.
+     * @param request The WebRequest.
+     * @return ResponseEntity containing the error details.
+     */
+    @ExceptionHandler(ReservationConflictException.class)
+    public ResponseEntity<ErrorDto> handleReservationConflictException(
+            ReservationConflictException ex, WebRequest request
+    ) {
+        log.warn("Reservation conflict: {}", ex.getMessage());
+        return buildErrorResponse(
+                HttpStatus.CONFLICT,
+                "Conflict",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
 
 
     /**
