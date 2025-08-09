@@ -132,20 +132,6 @@ public class VehicleController {
         return ResponseEntity.ok(isAvailable);
     }
 
-//    @GetMapping("/{id}/reservations")
-//    public ResponseEntity<Page<ReservationDto>> getVehicleReservations(
-//            @PathVariable Long id,
-//            @RequestParam(defaultValue = "0") int page,
-//            @RequestParam(defaultValue = "10") int size,
-//            @RequestParam(defaultValue = "startDate") String sortBy,
-//            @RequestParam(defaultValue = "DESC") String sortDirection
-//    ) {
-//        log.info("Received request to get reservations for vehicle ID {}: page={}, size={}, sortBy={}, sortDirection={}",
-//                id, page, size, sortBy, sortDirection);
-//        Page<ReservationDto> reservations = vehicleService.getVehicleReservations(id, page, size, sortBy, sortDirection);
-//        return ResponseEntity.ok(reservations);
-//    }
-
 
     @GetMapping("/{id}/reservations")
     public ResponseEntity<Page<ReservationInfoForVehicleDto>> getVehicleReservations(

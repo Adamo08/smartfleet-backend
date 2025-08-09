@@ -8,7 +8,7 @@ import com.adamo.vrspfab.users.User;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime; // Changed from java.sql.Timestamp
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -18,8 +18,17 @@ import java.util.Set;
 @Setter
 @Entity
 @Builder
-@Table(name = "reservations")
+@Table(
+        name = "reservations",
+        indexes = {
+                @Index(name = "idx_reservation_user", columnList = "user_id"),
+                @Index(name = "idx_reservation_vehicle", columnList = "vehicle_id"),
+                @Index(name = "idx_reservation_start_date", columnList = "startDate"),
+                @Index(name = "idx_reservation_status", columnList = "status")
+        }
+)
 public class Reservation {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -56,4 +65,22 @@ public class Reservation {
     @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<Bookmark> bookmarks = new HashSet<>();
+
+    // === Timestamps ===
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = this.createdAt;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }
