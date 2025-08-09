@@ -440,40 +440,6 @@ public class VehicleService {
         return vehicle.getReservations().size();
     }
 
-//    /**
-//     * Retrieves the reservations for a vehicle with pagination.
-//     *
-//     * @param id The ID of the vehicle.
-//     * @param page The page number (0-indexed).
-//     * @param size The number of items per page.
-//     * @param sortBy The field to sort by.
-//     * @param sortDirection The sort direction (ASC or DESC).
-//     * @return A page of Reservation entities.
-//     * @throws ResourceNotFoundException if the vehicle is not found.
-//     */
-//    @Transactional(readOnly = true)
-//    @Cacheable(value = "vehicleReservations", key = "#id + '-' + #page + '-' + #size + '-' + #sortBy + '-' + #sortDirection")
-//    public Page<ReservationDto> getVehicleReservations(
-//            Long id, int page, int size, String sortBy, String sortDirection
-//    ) {
-//        log.debug("Fetching reservations for vehicle with ID: {}: page={}, size={}, sortBy={}, sortDirection={}",
-//                id, page, size, sortBy, sortDirection);
-//        Vehicle vehicle = vehicleRepository.findById(id)
-//                .orElseThrow(() -> {
-//                    log.warn("Reservation fetch failed: Vehicle not found with ID: {}", id);
-//                    return new ResourceNotFoundException("Vehicle not found with ID: " + id, "Vehicle");
-//                });
-//        Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
-//        Pageable pageable = PageRequest.of(page, size, sort);
-//
-//
-//        // Map reservations to DTOs
-//        List<ReservationDto> reservationDtos = vehicle.getReservations().stream()
-//                .map(reservationMapper::toDto)
-//                .toList();
-//
-//        return new PageImpl<>(reservationDtos, pageable, reservationDtos.size());
-//    }
 
     /**
      * Retrieves the reservations for a vehicle with pagination.
