@@ -37,6 +37,7 @@ public interface SlotRepository extends JpaRepository<Slot, Long> {
      * @param vehicleId The ID of the vehicle.
      * @return A list of available Slot entities.
      */
+    @EntityGraph(attributePaths = {"vehicle", "reservation"}, type = EntityGraph.EntityGraphType.LOAD)
     @Query("SELECT s FROM Slot s WHERE s.vehicle.id = :vehicleId AND s.available = true")
     List<Slot> findAvailableSlotsByVehicleId(Long vehicleId);
 
