@@ -45,6 +45,14 @@ public class User {
     @Column(name = "phone_number", unique = true)
     private String phoneNumber;
 
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider")
+    private AuthProvider authProvider;
+
+    @Column(name = "provider_id", unique = false)
+    private String providerId;
+
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "address_id", referencedColumnName = "id")
     private Address address;
