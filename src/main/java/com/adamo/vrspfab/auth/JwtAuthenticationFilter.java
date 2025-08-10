@@ -3,6 +3,7 @@ package com.adamo.vrspfab.auth;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
@@ -21,15 +22,59 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
 
+//    @Override
+//    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+//        var authHeader = request.getHeader("Authorization");
+//        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+//            filterChain.doFilter(request, response);
+//            return;
+//        }
+//
+//        var token = authHeader.replace("Bearer ", "");
+//        var jwt = jwtService.parseToken(token);
+//        if (jwt == null || jwt.isExpired()) {
+//            filterChain.doFilter(request, response);
+//            return;
+//        }
+//
+//        var authentication = new UsernamePasswordAuthenticationToken(
+//                jwt.getUserId(),
+//                null,
+//                List.of(new SimpleGrantedAuthority("ROLE_" + jwt.getRole()))
+//        );
+//        authentication.setDetails(
+//                new WebAuthenticationDetailsSource().buildDetails(request)
+//        );
+//
+//        SecurityContextHolder.getContext().setAuthentication(authentication);
+//
+//        filterChain.doFilter(request, response);
+//    }
+
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        String token = null;
         var authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.replace("Bearer ", "");
+        } else {
+            // try cookie
+            if (request.getCookies() != null) {
+                for (Cookie c : request.getCookies()) {
+                    if ("accessToken".equals(c.getName())) {
+                        token = c.getValue();
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (token == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        var token = authHeader.replace("Bearer ", "");
         var jwt = jwtService.parseToken(token);
         if (jwt == null || jwt.isExpired()) {
             filterChain.doFilter(request, response);
@@ -41,12 +86,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 null,
                 List.of(new SimpleGrantedAuthority("ROLE_" + jwt.getRole()))
         );
-        authentication.setDetails(
-                new WebAuthenticationDetailsSource().buildDetails(request)
-        );
+        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         filterChain.doFilter(request, response);
     }
+
 }

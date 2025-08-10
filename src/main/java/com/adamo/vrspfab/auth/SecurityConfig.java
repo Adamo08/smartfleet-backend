@@ -32,6 +32,9 @@ public class SecurityConfig {
     @Qualifier("userDetailsServiceImpl")
     private final UserDetailsService userDetailsService;
 
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -54,20 +57,22 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .sessionManagement(c ->
-                        c.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(c -> c.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(c -> {
-                            featureSecurityRules.forEach(r -> r.configure(c));
-                            c.anyRequest().authenticated();
-                        }
+                    featureSecurityRules.forEach(r -> r.configure(c));
+                    // allow oauth2 endpoints
+                    c.requestMatchers("/oauth2/**", "/login/oauth2/**", "/oauth2/authorization/**").permitAll();
+                    c.anyRequest().authenticated();
+                })
+                .oauth2Login(o -> o
+                        .userInfoEndpoint(u -> u.userService(customOAuth2UserService))
+                        .successHandler(oAuth2AuthenticationSuccessHandler)
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(c -> {
-                    c.authenticationEntryPoint(
-                            new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED));
-                    c.accessDeniedHandler(((request, response, accessDeniedException) ->
-                            response.setStatus(HttpStatus.FORBIDDEN.value())));
+                    c.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED));
+                    c.accessDeniedHandler((request, response, ex) -> response.setStatus(HttpStatus.FORBIDDEN.value()));
                 });
 
         return http.build();
