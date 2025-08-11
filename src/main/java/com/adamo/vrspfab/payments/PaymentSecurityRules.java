@@ -23,7 +23,7 @@ public class PaymentSecurityRules implements SecurityRules {
                 // Customer and Admin can create payments
                 .requestMatchers(HttpMethod.POST, "/payments/session").hasAnyRole(CUSTOMER, ADMIN)
                 .requestMatchers(HttpMethod.POST, "/payments/process").hasAnyRole(CUSTOMER, ADMIN)
-                .requestMatchers(HttpMethod.GET, "/payments/{paymentId}/status").hasAnyRole(CUSTOMER, ADMIN)
+                .requestMatchers(HttpMethod.GET, "/payments/*/status").hasAnyRole(CUSTOMER, ADMIN)
 
                 // Refund endpoints - can be initiated by customers or managed by admins
                 .requestMatchers(HttpMethod.POST, "/payments/refund").hasAnyRole(CUSTOMER, ADMIN)

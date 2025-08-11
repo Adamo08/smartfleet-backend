@@ -8,19 +8,19 @@ import java.math.BigDecimal;
 
 @Data
 public class PaymentRequestDto {
-    @NotNull
+    @NotNull (message = "Reservation ID cannot be null")
     private Long reservationId;
 
-    @NotNull
-    @Positive
+    @NotNull (message = "Amount cannot be null")
+    @Positive (message = "Amount must be positive")
     private BigDecimal amount;
 
-    @NotBlank
+    @NotBlank (message = "Currency cannot be blank")
     private String currency;
 
-    @NotBlank
-    private String paymentMethodId; // For direct processing (e.g., Stripe PaymentIntent)
+    @NotBlank (message = "Payment method ID cannot be blank")
+    private String paymentMethodId; // For direct processing
 
-    @NotBlank
-    private String providerName; // e.g., "stripePaymentProvider"
+    @NotBlank (message = "Provider name cannot be blank")
+    private String providerName; // e.g., "paypalPaymentProvider"
 }

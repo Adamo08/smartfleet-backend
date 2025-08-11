@@ -1,5 +1,6 @@
 package com.adamo.vrspfab.payments;
 
+import com.adamo.vrspfab.reservations.ReservationRepository;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ import java.util.Optional;
 public class PaypalPaymentProvider implements PaymentProvider {
 
     private final PaymentRepository paymentRepository;
+    private final ReservationRepository reservationRepository;
     private final RefundRepository refundRepository;
     private final RestTemplate restTemplate;
 
@@ -42,13 +44,69 @@ public class PaypalPaymentProvider implements PaymentProvider {
     @Value("${paypal.client.secret}")
     private String paypalClientSecret;
 
-    // A simple in-memory cache for the access token. For multi-instance deployments, use a distributed cache like Redis.
+    // A simple in-memory cache for the access token. For multi-instance deployments, we will use a distributed cache like Redis.
     private volatile String accessToken;
     private volatile LocalDateTime tokenExpiryTime;
 
     @Override
+    @Transactional
     public PaymentResponseDto processPayment(PaymentRequestDto requestDto) {
-        throw new UnsupportedOperationException("Direct payment processing is not a standard flow for PayPal. Please use createPaymentSession.");
+        String orderId = requestDto.getPaymentMethodId();  // Repurpose as PayPal order ID
+        if (orderId == null) {
+            throw new PaymentException("PaymentMethodId (Order ID) is required for PayPal capture.");
+        }
+
+        Payment payment = paymentRepository.findByTransactionId(orderId)
+                .orElseThrow(() -> new PaymentException("No pending payment found for Order ID: " + orderId));
+
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            throw new PaymentException("Cannot capture non-pending payment. Status: " + payment.getStatus());
+        }
+
+        // Verify amounts match to prevent tampering
+        if (!payment.getAmount().equals(requestDto.getAmount()) || !payment.getCurrency().equals(requestDto.getCurrency())) {
+            throw new PaymentException("Request amount/currency does not match pending payment.");
+        }
+
+        try {
+            String token = getAccessToken();
+            HttpHeaders headers = createAuthHeaders(token);
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<PaypalOrderResponse> response = restTemplate.postForEntity(
+                    paypalBaseUrl + "/v2/checkout/orders/" + orderId + "/capture",
+                    entity,
+                    PaypalOrderResponse.class
+            );
+
+            PaypalOrderResponse capturedOrder = Objects.requireNonNull(response.getBody());
+            if (!"COMPLETED".equalsIgnoreCase(capturedOrder.getStatus())) {
+                throw new PaymentException("PayPal order capture failed. Status: " + capturedOrder.getStatus());
+            }
+
+            // Extract capture ID (optional, but useful for refunds)
+            String captureId = capturedOrder.getPurchaseUnits().stream()
+                    .findFirst()
+                    .flatMap(pu -> pu.getPayments().getCaptures().stream().findFirst())
+                    .map(PaypalCapture::getId)
+                    .orElse(null);
+
+            // Update payment
+            payment.setStatus(PaymentStatus.COMPLETED);
+            if (captureId != null) {
+                payment.setTransactionId(captureId);  // Update to capture ID for future refs/refunds
+                payment.setCaptureId(captureId);
+            }
+            paymentRepository.save(payment);
+
+            return new PaymentResponseDto(payment.getId(), capturedOrder.getId(), "COMPLETED", null);
+
+        } catch (HttpClientErrorException e) {
+            log.error("PayPal capture error for order {}: {} - {}", orderId, e.getStatusCode(), e.getResponseBodyAsString());
+            payment.setStatus(PaymentStatus.FAILED);
+            paymentRepository.save(payment);
+            throw new PaymentException("PayPal capture failed: " + e.getResponseBodyAsString(), e);
+        }
     }
 
     @Override
@@ -93,9 +151,11 @@ public class PaypalPaymentProvider implements PaymentProvider {
         }
     }
 
+
     @Override
     @Transactional
     public RefundResponseDto processRefund(RefundRequestDto requestDto) {
+        // 1. Find the original payment record
         Payment payment = paymentRepository.findById(requestDto.getPaymentId())
                 .orElseThrow(() -> new PaymentException("Cannot refund non-existent payment with ID: " + requestDto.getPaymentId()));
 
@@ -103,19 +163,32 @@ public class PaypalPaymentProvider implements PaymentProvider {
             throw new PaymentException("Cannot refund a payment that is not completed. Status: " + payment.getStatus());
         }
 
+        String captureId = payment.getCaptureId();
+        if (captureId == null || captureId.isBlank()) {
+            throw new PaymentException("Payment " + payment.getId() + " has no Capture ID to refund.");
+        }
+
+        // 2. CREATE AND SAVE a PENDING refund record FIRST
+        // This records our intent to refund before we make the external call.
+        Refund refund = new Refund();
+        refund.setPayment(payment);
+        refund.setAmount(requestDto.getAmount());
+        refund.setCurrency(payment.getCurrency());
+        refund.setReason(requestDto.getReason());
+        refund.setStatus(RefundStatus.PENDING); // Mark as PENDING
+        refund.setProcessedAt(LocalDateTime.now());
+        refundRepository.save(refund);
+
         try {
             String token = getAccessToken();
             HttpHeaders headers = createAuthHeaders(token);
 
-            // 1. Get the Capture ID from the completed order
-            String captureId = getCaptureIdForOrder(payment.getTransactionId(), token);
-
-            // 2. Execute the refund against the Capture ID
             PaypalRefundRequest refundRequest = new PaypalRefundRequest(
                     new PaypalMoney(payment.getCurrency(), String.valueOf(requestDto.getAmount()))
             );
             HttpEntity<PaypalRefundRequest> entity = new HttpEntity<>(refundRequest, headers);
 
+            // 3. EXECUTE the external API call
             ResponseEntity<PaypalRefundResponse> response = restTemplate.postForEntity(
                     paypalBaseUrl + "/v2/payments/captures/" + captureId + "/refund",
                     entity,
@@ -124,34 +197,162 @@ public class PaypalPaymentProvider implements PaymentProvider {
 
             PaypalRefundResponse refundResponse = response.getBody();
             if (refundResponse == null || !"COMPLETED".equalsIgnoreCase(refundResponse.getStatus())) {
-                throw new PaymentException("PayPal refund was not completed successfully. Status: " + (refundResponse != null ? refundResponse.getStatus() : "UNKNOWN"));
+                throw new PaymentException("PayPal refund was not completed successfully. Status: " +
+                        (refundResponse != null ? refundResponse.getStatus() : "UNKNOWN"));
             }
 
-            // 3. Create and save our internal refund record
-            Refund refund = new Refund();
-            refund.setPayment(payment);
-            refund.setRefundTransactionId(refundResponse.getId());
-            refund.setAmount(BigDecimal.valueOf(requestDto.getAmount()));
-            refund.setCurrency(payment.getCurrency());
-            refund.setReason(requestDto.getReason());
+            // 4. SUCCESS: Update the record with the outcome
             refund.setStatus(RefundStatus.PROCESSED);
-            refund.setProcessedAt(LocalDateTime.now());
-            refundRepository.save(refund);
-
+            refund.setRefundTransactionId(refundResponse.getId());
             payment.setStatus(PaymentStatus.REFUNDED);
-            paymentRepository.save(payment);
 
             return new RefundResponseDto(refund.getId(), refund.getRefundTransactionId(), refund.getStatus());
 
         } catch (HttpClientErrorException e) {
-            log.error("PayPal API error during refund: {} - {}", e.getStatusCode(), e.getResponseBodyAsString());
+            // 5. FAILURE: Update the record with the failure details
+            log.error("PayPal API error during refund for capture ID {}: {} - {}", captureId, e.getStatusCode(), e.getResponseBodyAsString());
+            refund.setStatus(RefundStatus.FAILED); // Mark our internal refund record as FAILED
+            // We might want to add a field to the Refund entity to store the error message
+            // refund.setFailureReason(e.getResponseBodyAsString());
             throw new PaymentException("PayPal API error during refund: " + e.getResponseBodyAsString(), e);
+        } finally {
+            // 6. ALWAYS save the final state of the payment and refund records
+            paymentRepository.save(payment);
+            refundRepository.save(refund);
         }
     }
 
+
+//    @Override
+//    @Transactional
+//    public RefundResponseDto processRefund(RefundRequestDto requestDto) {
+//        // Find the original payment record in your database
+//        Payment payment = paymentRepository.findById(requestDto.getPaymentId())
+//                .orElseThrow(() -> new PaymentException("Cannot refund non-existent payment with ID: " + requestDto.getPaymentId()));
+//
+//        // Ensure the payment is in a refundable state
+//        if (payment.getStatus() != PaymentStatus.COMPLETED) {
+//            throw new PaymentException("Cannot refund a payment that is not completed. Status: " + payment.getStatus());
+//        }
+//
+//        // Get the capture ID that was stored when the payment was completed.
+//        // This is the critical fix: use the stored ID directly.
+//        String captureId = payment.getCaptureId();
+//        if (captureId == null || captureId.isBlank()) {
+//            throw new PaymentException("Cannot refund payment " + payment.getId() + " because it has no associated Capture ID.");
+//        }
+//
+//        try {
+//            // Get a valid PayPal API access token
+//            String token = getAccessToken();
+//            HttpHeaders headers = createAuthHeaders(token);
+//
+//            // Prepare the refund request payload for the PayPal API
+//            PaypalRefundRequest refundRequest = new PaypalRefundRequest(
+//                    new PaypalMoney(payment.getCurrency(), String.valueOf(requestDto.getAmount()))
+//            );
+//            HttpEntity<PaypalRefundRequest> entity = new HttpEntity<>(refundRequest, headers);
+//
+//            // Execute the refund request against the specific PayPal Capture ID
+//            ResponseEntity<PaypalRefundResponse> response = restTemplate.postForEntity(
+//                    paypalBaseUrl + "/v2/payments/captures/" + captureId + "/refund",
+//                    entity,
+//                    PaypalRefundResponse.class
+//            );
+//
+//            PaypalRefundResponse refundResponse = response.getBody();
+//            if (refundResponse == null || !"COMPLETED".equalsIgnoreCase(refundResponse.getStatus())) {
+//                String status = (refundResponse != null) ? refundResponse.getStatus() : "UNKNOWN";
+//                throw new PaymentException("PayPal refund was not completed successfully. Status: " + status);
+//            }
+//
+//            // Create and save our internal refund record for tracking
+//            Refund refund = new Refund();
+//            refund.setPayment(payment);
+//            refund.setRefundTransactionId(refundResponse.getId());
+//            refund.setAmount(requestDto.getAmount());
+//            refund.setCurrency(payment.getCurrency());
+//            refund.setReason(requestDto.getReason());
+//            refund.setStatus(RefundStatus.PROCESSED);
+//            refund.setProcessedAt(LocalDateTime.now());
+//            refundRepository.save(refund);
+//
+//            // Update the original payment's status to REFUNDED
+//            payment.setStatus(PaymentStatus.REFUNDED);
+//            paymentRepository.save(payment);
+//
+//            // Return a response DTO with details of our internal refund record
+//            return new RefundResponseDto(refund.getId(), refund.getRefundTransactionId(), refund.getStatus());
+//
+//        } catch (HttpClientErrorException e) {
+//            log.error("PayPal API error during refund for capture ID {}: {} - {}", captureId, e.getStatusCode(), e.getResponseBodyAsString());
+//            // You could create a FAILED refund record here if desired for tracking purposes
+//            throw new PaymentException("PayPal API error during refund: " + e.getResponseBodyAsString(), e);
+//        }
+//    }
+
+
+//    @Override
+//    @Transactional
+//    public RefundResponseDto processRefund(RefundRequestDto requestDto) {
+//        Payment payment = paymentRepository.findById(requestDto.getPaymentId())
+//                .orElseThrow(() -> new PaymentException("Cannot refund non-existent payment with ID: " + requestDto.getPaymentId()));
+//
+//        if (payment.getStatus() != PaymentStatus.COMPLETED) {
+//            throw new PaymentException("Cannot refund a payment that is not completed. Status: " + payment.getStatus());
+//        }
+//
+//        try {
+//            String token = getAccessToken();
+//            HttpHeaders headers = createAuthHeaders(token);
+//
+//            // 1. Get the Capture ID from the completed order
+//            String captureId = getCaptureIdForOrder(payment.getTransactionId(), token);
+//
+//            // 2. Execute the refund against the Capture ID
+//            PaypalRefundRequest refundRequest = new PaypalRefundRequest(
+//                    new PaypalMoney(payment.getCurrency(), String.valueOf(requestDto.getAmount()))
+//            );
+//            HttpEntity<PaypalRefundRequest> entity = new HttpEntity<>(refundRequest, headers);
+//
+//            ResponseEntity<PaypalRefundResponse> response = restTemplate.postForEntity(
+//                    paypalBaseUrl + "/v2/payments/captures/" + captureId + "/refund",
+//                    entity,
+//                    PaypalRefundResponse.class
+//            );
+//
+//            PaypalRefundResponse refundResponse = response.getBody();
+//            if (refundResponse == null || !"COMPLETED".equalsIgnoreCase(refundResponse.getStatus())) {
+//                throw new PaymentException("PayPal refund was not completed successfully. Status: " + (refundResponse != null ? refundResponse.getStatus() : "UNKNOWN"));
+//            }
+//
+//            // 3. Create and save our internal refund record
+//            Refund refund = new Refund();
+//            refund.setPayment(payment);
+//            refund.setRefundTransactionId(refundResponse.getId());
+//            refund.setAmount(requestDto.getAmount());
+//            refund.setCurrency(payment.getCurrency());
+//            refund.setReason(requestDto.getReason());
+//            refund.setStatus(RefundStatus.PROCESSED);
+//            refund.setProcessedAt(LocalDateTime.now());
+//            refundRepository.save(refund);
+//
+//            payment.setStatus(PaymentStatus.REFUNDED);
+//            paymentRepository.save(payment);
+//
+//            return new RefundResponseDto(refund.getId(), refund.getRefundTransactionId(), refund.getStatus());
+//
+//        } catch (HttpClientErrorException e) {
+//            log.error("PayPal API error during refund: {} - {}", e.getStatusCode(), e.getResponseBodyAsString());
+//            throw new PaymentException("PayPal API error during refund: " + e.getResponseBodyAsString(), e);
+//        }
+//    }
+
+
+
     @Override
     public String getProviderName() {
-        return "PayPalPaymentProvider";
+        return "paypalPaymentProvider";
     }
 
     @Override
@@ -168,8 +369,15 @@ public class PaypalPaymentProvider implements PaymentProvider {
             HttpHeaders headers = createAuthHeaders(token);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
+            String endpoint;
+            if (payment.getStatus() == PaymentStatus.COMPLETED && payment.getCaptureId() != null) {
+                endpoint = paypalBaseUrl + "/v2/payments/captures/" + payment.getCaptureId();
+            } else {
+                endpoint = paypalBaseUrl + "/v2/checkout/orders/" + payment.getTransactionId();
+            }
+
             ResponseEntity<PaypalOrderResponse> response = restTemplate.exchange(
-                    paypalBaseUrl + "/v2/checkout/orders/" + payment.getTransactionId(),
+                    endpoint,
                     HttpMethod.GET,
                     entity,
                     PaypalOrderResponse.class
@@ -184,7 +392,8 @@ public class PaypalPaymentProvider implements PaymentProvider {
         }
     }
 
-    private String getAccessToken() {
+
+    String getAccessToken() {
         if (accessToken == null || LocalDateTime.now().isAfter(tokenExpiryTime)) {
             synchronized (this) {
                 if (accessToken == null || LocalDateTime.now().isAfter(tokenExpiryTime)) {
@@ -240,8 +449,12 @@ public class PaypalPaymentProvider implements PaymentProvider {
     }
 
     private Payment createPendingPayment(SessionRequestDto requestDto) {
+
+        var reservation = reservationRepository.findById(requestDto.getReservationId())
+                .orElseThrow(() -> new PaymentException("Reservation not found with ID: " + requestDto.getReservationId()));
+
         Payment payment = Payment.builder()
-                .reservation(null) // TODO: Inject ReservationRepository to fetch the actual reservation
+                .reservation(reservation)
                 .amount(requestDto.getAmount())
                 .currency(requestDto.getCurrency())
                 .status(PaymentStatus.PENDING)
@@ -260,6 +473,8 @@ public class PaypalPaymentProvider implements PaymentProvider {
     private PaypalOrderRequest createOrderPayload(SessionRequestDto requestDto, Long internalPaymentId) {
         PaypalMoney amount = new PaypalMoney(requestDto.getCurrency(), requestDto.getAmount().toString());
         PaypalPurchaseUnit purchaseUnit = new PaypalPurchaseUnit(amount);
+        // include internal reference for reconciliation
+        purchaseUnit.setReferenceId(String.valueOf(internalPaymentId));
         PaypalApplicationContext context = new PaypalApplicationContext(requestDto.getSuccessUrl(), requestDto.getCancelUrl());
         return new PaypalOrderRequest("CAPTURE", List.of(purchaseUnit), context);
     }
@@ -293,6 +508,8 @@ public class PaypalPaymentProvider implements PaymentProvider {
     private static class PaypalPurchaseUnit {
         private PaypalMoney amount;
         private PaypalPayments payments; // Used in response
+        @JsonProperty("reference_id")
+        private String referenceId;
         public PaypalPurchaseUnit(PaypalMoney amount) { this.amount = amount; }
         public PaypalPurchaseUnit() {}
     }
