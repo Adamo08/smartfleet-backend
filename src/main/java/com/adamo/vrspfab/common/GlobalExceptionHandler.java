@@ -3,6 +3,7 @@ package com.adamo.vrspfab.common;
 import com.adamo.vrspfab.bookmarks.DuplicateBookmarkException;
 import com.adamo.vrspfab.favorites.DuplicateFavoriteException;
 import com.adamo.vrspfab.notifications.NotificationNotFoundException;
+import com.adamo.vrspfab.payments.PaymentException;
 import com.adamo.vrspfab.reservations.ReservationBusinessException;
 import com.adamo.vrspfab.reservations.ReservationConflictException;
 import com.adamo.vrspfab.slots.InvalidSlotStateException;
@@ -141,7 +142,7 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(
                 HttpStatus.FORBIDDEN,
                 "Forbidden",
-                "Access is denied",
+                "Access denied: " + ex.getMessage(),
                 request.getDescription(false).replace("uri=", "")
         );
     }
@@ -433,6 +434,27 @@ public class GlobalExceptionHandler {
         );
     }
 
+
+
+    /**
+     * Handles PaymentException, returning a 400 Bad Request status.
+     *
+     * @param ex The PaymentException.
+     * @param request The WebRequest.
+     * @return ResponseEntity containing the error details.
+     */
+    @ExceptionHandler(PaymentException.class)
+    public ResponseEntity<ErrorDto> handlePaymentException(
+            PaymentException ex, WebRequest request
+    ) {
+        log.warn("Payment error: {}", ex.getMessage());
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                "Bad Request",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
 
 
     /**
