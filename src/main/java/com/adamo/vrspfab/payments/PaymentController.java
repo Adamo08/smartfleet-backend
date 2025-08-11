@@ -1,5 +1,6 @@
 package com.adamo.vrspfab.payments;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,13 +17,12 @@ public class PaymentController {
     private final PaymentAnalyticsService analyticsService;
 
     @PostMapping("/session")
-    public ResponseEntity<SessionResponseDto> createPaymentSession(@RequestBody SessionRequestDto requestDto) {
+    public ResponseEntity<SessionResponseDto> createPaymentSession(@Valid @RequestBody SessionRequestDto requestDto) {
         return ResponseEntity.ok(paymentService.createPaymentSession(requestDto));
     }
-
     @PostMapping("/process")
     public ResponseEntity<PaymentResponseDto> processPayment(
-            @RequestBody PaymentRequestDto requestDto,
+            @Valid @RequestBody PaymentRequestDto requestDto,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         // The idempotency key is passed to the service layer for handling
         return ResponseEntity.ok(paymentService.processPayment(requestDto, idempotencyKey));
@@ -34,19 +34,27 @@ public class PaymentController {
     }
 
     @PostMapping("/refund")
-    public ResponseEntity<RefundResponseDto> processRefund(@RequestBody RefundRequestDto requestDto) {
+    public ResponseEntity<RefundResponseDto> processRefund(@Valid @RequestBody RefundRequestDto requestDto) {
         return ResponseEntity.ok(refundService.processRefund(requestDto));
     }
 
     @GetMapping("/refund/{refundId}")
-    public ResponseEntity<Refund> getRefundDetails(@PathVariable Long refundId) {
+    public ResponseEntity<RefundDetailsDto> getRefundDetails(@PathVariable Long refundId) {
         return ResponseEntity.ok(refundService.getRefundDetails(refundId));
     }
 
     @GetMapping("/analytics")
     public ResponseEntity<AnalyticsReportDto> getAnalytics(
-            @RequestParam String startDate,
-            @RequestParam String endDate) {
+            @RequestParam (required = false) String startDate,
+            @RequestParam (required = false) String endDate) {
+
+        // Default to the last 30 days if no dates are provided
+        if (startDate == null || endDate == null) {
+            LocalDateTime now = LocalDateTime.now();
+            startDate = now.minusDays(30).format(DateTimeFormatter.ISO_DATE_TIME);
+            endDate = now.format(DateTimeFormatter.ISO_DATE_TIME);
+        }
+
         LocalDateTime start = LocalDateTime.parse(startDate, DateTimeFormatter.ISO_DATE_TIME);
         LocalDateTime end = LocalDateTime.parse(endDate, DateTimeFormatter.ISO_DATE_TIME);
         return ResponseEntity.ok(analyticsService.getPaymentAnalytics(start, end));

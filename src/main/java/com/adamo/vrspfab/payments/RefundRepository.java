@@ -17,5 +17,5 @@ public interface RefundRepository extends JpaRepository<Refund, Long> {
     long countByProcessedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 
     @EntityGraph(attributePaths = {"payment"})
-    Optional<Refund> findByPaymentTransactionId(String transactionId);
+    Optional<Refund> findByRefundTransactionId(String refundTransactionId);
 }

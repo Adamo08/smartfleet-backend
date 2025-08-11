@@ -1,5 +1,6 @@
 package com.adamo.vrspfab.payments;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,7 +29,7 @@ public class AdminPaymentController {
      * @return A page of Payment entities.
      */
     @GetMapping
-    public ResponseEntity<Page<Payment>> getAllPayments(Pageable pageable) {
+    public ResponseEntity<Page<PaymentDetailsDto>> getAllPayments(Pageable pageable) {
         return ResponseEntity.ok(adminPaymentService.findAllPayments(pageable));
     }
 
@@ -38,7 +39,7 @@ public class AdminPaymentController {
      * @return The full Payment entity.
      */
     @GetMapping("/{paymentId}")
-    public ResponseEntity<Payment> getPaymentById(@PathVariable Long paymentId) {
+    public ResponseEntity<PaymentDetailsDto> getPaymentById(@PathVariable Long paymentId) {
         return ResponseEntity.ok(adminPaymentService.findPaymentById(paymentId));
     }
 
@@ -49,7 +50,7 @@ public class AdminPaymentController {
      * @return The response from the refund processing.
      */
     @PostMapping("/refund")
-    public ResponseEntity<RefundResponseDto> manualRefund(@RequestBody RefundRequestDto requestDto) {
+    public ResponseEntity<RefundResponseDto> manualRefund(@Valid @RequestBody RefundRequestDto requestDto) {
         // This endpoint reuses the existing RefundService but is secured for admins.
         return ResponseEntity.ok(refundService.processRefund(requestDto));
     }
@@ -60,7 +61,7 @@ public class AdminPaymentController {
      * @return A list of Refund entities.
      */
     @GetMapping("/{paymentId}/refunds")
-    public ResponseEntity<List<Refund>> getRefundsForPayment(@PathVariable Long paymentId) {
+    public ResponseEntity<List<RefundDetailsDto>> getRefundsForPayment(@PathVariable Long paymentId) {
         return ResponseEntity.ok(adminPaymentService.findRefundsByPaymentId(paymentId));
     }
 }

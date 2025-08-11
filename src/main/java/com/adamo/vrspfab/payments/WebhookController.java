@@ -1,8 +1,5 @@
 package com.adamo.vrspfab.payments;
 
-import com.stripe.exception.SignatureVerificationException;
-import com.stripe.model.Event;
-import com.stripe.net.Webhook;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,34 +16,9 @@ public class WebhookController {
 
     private final WebhookService webhookService;
 
-    @Value("${stripe.webhook.secret}")
-    private String stripeWebhookSecret;
-
     @Value("${paypal.webhook.id}")
     private String paypalWebhookId;
 
-
-    @PostMapping("/stripe")
-    public ResponseEntity<String> handleStripeWebhook(@RequestBody String payload, @RequestHeader("Stripe-Signature") String sigHeader) {
-        if (sigHeader == null) {
-            return ResponseEntity.badRequest().body("Missing Stripe-Signature header.");
-        }
-
-        Event event;
-        try {
-            event = Webhook.constructEvent(payload, sigHeader, stripeWebhookSecret);
-        } catch (SignatureVerificationException e) {
-            log.error("Stripe webhook signature verification failed.", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Signature verification failed.");
-        } catch (Exception e) {
-            log.error("Error processing Stripe webhook.", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing webhook.");
-        }
-
-        webhookService.processStripeEvent(event);
-
-        return ResponseEntity.ok().build();
-    }
 
     @PostMapping("/paypal")
     public ResponseEntity<String> handlePaypalWebhook(@RequestBody String payload, @RequestHeader HttpHeaders headers) {

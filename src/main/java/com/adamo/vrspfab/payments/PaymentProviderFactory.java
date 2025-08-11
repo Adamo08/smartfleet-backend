@@ -1,5 +1,6 @@
 package com.adamo.vrspfab.payments;
 
+
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -22,7 +23,7 @@ public class PaymentProviderFactory {
     /**
      * Retrieves a payment provider by its designated name.
      *
-     * @param providerName The name of the provider to retrieve (e.g., "stripePaymentProvider").
+     * @param providerName The name of the provider to retrieve (e.g., "paypalPaymentProvider").
      * @return An Optional containing the PaymentProvider if found, otherwise an empty Optional.
      */
     public Optional<PaymentProvider> getProvider(String providerName) {

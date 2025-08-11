@@ -10,22 +10,22 @@ import java.math.BigDecimal;
 
 @Data
 public class SessionRequestDto {
-    @NotNull
+    @NotNull (message = "Reservation ID cannot be null")
     private Long reservationId;
 
-    @NotNull
-    @Positive
+    @NotNull (message = "Amount cannot be null")
+    @Positive (message = "Amount must be positive")
     private BigDecimal amount;
 
-    @NotBlank
+    @NotBlank (message = "Currency cannot be blank")
     private String currency;
 
-    @NotBlank
+    @NotBlank (message = "Success URL cannot be blank")
     private String successUrl;
 
-    @NotBlank
+    @NotBlank (message = "Cancel URL cannot be blank")
     private String cancelUrl;
 
-    @NotBlank
-    private String providerName; // e.g., "stripePaymentProvider"
+    @NotBlank (message = "Provider name cannot be blank")
+    private String providerName; // e.g., "paypalPaymentProvider"
 }

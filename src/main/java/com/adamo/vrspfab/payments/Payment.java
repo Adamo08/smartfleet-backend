@@ -40,8 +40,12 @@ public class Payment {
     @Column(name = "transaction_id", length = 255, unique = true) // Increased length for various providers
     private String transactionId;
 
+    // capture id
+    @Column(name = "capture_id", length = 255, unique = true)
+    private String captureId;
+
     @Column(name = "provider", nullable = false, length = 50)
-    private String provider; // e.g., "stripePaymentProvider", "paypalPaymentProvider"
+    private String provider; // e.g., "cmiPaymentProvider", "paypalPaymentProvider"
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -49,7 +53,7 @@ public class Payment {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @OneToOne(mappedBy = "payment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "payment", cascade = CascadeType.ALL)
     private PaymentInfo paymentInfo;
 
     @PrePersist

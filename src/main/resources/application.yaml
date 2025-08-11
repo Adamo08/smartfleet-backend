@@ -50,7 +50,7 @@ spring:
 #    host: smtp.sendgrid.net
 #    port: 587
 #    username: apikey
-#    password: your-sendgrid-api-key
+#    password: sendgrid-api-key
 #    properties:
 #      mail:
 #        smtp:
@@ -72,12 +72,6 @@ spring:
             enable: true
           from: ${DEFAULT_FROM}
 
-stripe:
-  api:
-    secretKey: ${STRIPE_SECRET_KEY}
-  webhook:
-        secret: ${STRIPE_WEBHOOK_SECRET}
-
 paypal:
   api:
         baseUrl: https://api-m.sandbox.paypal.com # Change to https://api-m.paypal.com for live
@@ -90,7 +84,7 @@ paypal:
     secret: ${PAYPAL_WEBHOOK_SECRET}
 
 payment:
-  provider: stripe # or paypal
+  provider: paypal # or stripe
 
 
 logging:
