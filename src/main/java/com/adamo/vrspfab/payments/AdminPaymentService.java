@@ -1,6 +1,5 @@
 package com.adamo.vrspfab.payments;
 
-import com.adamo.vrspfab.payments.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,17 +18,28 @@ public class AdminPaymentService {
 
     private final PaymentRepository paymentRepository;
     private final RefundRepository refundRepository;
+    private final RefundMapper refundMapper;
+    private final PaymentMapper paymentMapper;
 
-    public Page<Payment> findAllPayments(Pageable pageable) {
-        return paymentRepository.findAll(pageable);
+    public Page<PaymentDetailsDto> findAllPayments(Pageable pageable) {
+        Page<Payment> paymentsPage = paymentRepository.findAll(pageable);
+        return paymentsPage.map(paymentMapper::toPaymentDetailsDto);
     }
 
-    public Payment findPaymentById(Long paymentId) {
-        return paymentRepository.findWithDetailsById(paymentId)
+    public PaymentDetailsDto findPaymentById(Long paymentId) {
+        Payment payment = paymentRepository.findWithDetailsById(paymentId)
                 .orElseThrow(() -> new PaymentException("Payment not found with ID: " + paymentId));
+        return paymentMapper.toPaymentDetailsDto(payment);
     }
 
-    public List<Refund> findRefundsByPaymentId(Long paymentId) {
-        return refundRepository.findByPaymentId(paymentId);
+    public List<RefundDetailsDto> findRefundsByPaymentId(Long paymentId) {
+        var refunds = refundRepository.findByPaymentId(paymentId);
+        if (refunds.isEmpty()) {
+            throw new PaymentException("No refunds found for payment ID: " + paymentId);
+        }
+
+        return refunds.stream()
+                .map(refundMapper::toRefundDetailsDto)
+                .toList();
     }
 }
