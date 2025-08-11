@@ -10,6 +10,6 @@ public class AnalyticsReportDto {
     private double successRate;
     private long totalRefunds;
     private double refundRate;
-    private BigDecimal totalRevenue; // Renamed from totalAmount for clarity
-    private BigDecimal averagePaymentAmount; // Changed to BigDecimal
+    private BigDecimal totalRevenue;
+    private BigDecimal averagePaymentAmount;
 }
