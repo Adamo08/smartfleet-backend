@@ -48,7 +48,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "auth_provider")
-    private AuthProvider authProvider;
+    private AuthProvider authProvider = AuthProvider.LOCAL; // Default to local authentication
 
     @Column(name = "provider_id", unique = false)
     private String providerId;

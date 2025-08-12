@@ -53,6 +53,7 @@ public class UserService {
         var user = userMapper.toEntity(request);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRole(Role.CUSTOMER); // Default role for new users
+        user.setAuthProvider(AuthProvider.LOCAL); // Default auth provider
         userRepository.save(user);
 
         return userMapper.toDto(user);
