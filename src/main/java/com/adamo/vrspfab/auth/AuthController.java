@@ -1,9 +1,8 @@
 package com.adamo.vrspfab.auth;
 
-
 import com.adamo.vrspfab.users.UserDto;
 import com.adamo.vrspfab.users.UserMapper;
-import com.adamo.vrspfab.users.UserRepository;
+import com.adamo.vrspfab.users.UserService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,10 +13,11 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.*;
 
+import com.adamo.vrspfab.common.dto.ForgotPasswordRequest;
+import com.adamo.vrspfab.common.dto.ResetPasswordRequest;
 
 @AllArgsConstructor
 @RestController
@@ -27,7 +27,7 @@ public class AuthController {
     private final JwtConfig jwtConfig;
     private final UserMapper userMapper;
     private final AuthService authService;
-
+    private final UserService userService;
 
     /**
      * This method handles user login requests.
@@ -52,8 +52,43 @@ public class AuthController {
         return new JwtResponse(loginResult.getAccessToken().toString());
     }
 
+    /**
+     * This method handles forgot password requests.
+     *
+     * @param request the forgot password request
+     * @return ResponseEntity indicating the result
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        userService.sendPasswordResetEmail(request.getEmail());
+        return ResponseEntity.ok("Password reset email sent successfully");
+    }
 
+    /**
+     * This method handles password reset requests.
+     *
+     * @param request the reset password request
+     * @return ResponseEntity indicating the result
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        userService.resetPassword(request.getToken(), request.getNewPassword());
+        return ResponseEntity.ok("Password reset successfully");
+    }
 
+    /**
+     * This method handles OAuth login initiation.
+     * Redirects user to OAuth provider for authentication.
+     */
+    @GetMapping("/oauth/{provider}")
+    public void initiateOAuth(@PathVariable String provider, 
+                             @RequestParam String redirect_uri,
+                             HttpServletResponse response) throws Exception {
+        // This will be handled by Spring Security OAuth2
+        // The user will be redirected to the OAuth provider
+        // After successful authentication, they'll be redirected back to the callback URL
+        response.sendRedirect("/oauth2/authorization/" + provider);
+    }
 
     @GetMapping("/me")
     public ResponseEntity<UserDto> me() {
@@ -66,8 +101,6 @@ public class AuthController {
         return ResponseEntity.ok(userDto);
     }
 
-
-
     /**
      * This method handles the refresh token request.
      *
@@ -79,8 +112,6 @@ public class AuthController {
         var accessToken = authService.refreshAccessToken(refreshToken);
         return new JwtResponse(accessToken.toString());
     }
-
-
 
     /**
      * This method handles BadCredentialsException thrown during authentication.
