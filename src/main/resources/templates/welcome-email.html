@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Welcome to VRSPFAB!</title>
@@ -34,7 +34,9 @@
 </head>
 <body>
 <div class="container">
-    <h1>Welcome, {{username}}! 🎉</h1>
+    <h1>
+        Welcome, <span th:text="${username}">User</span>! 🎉
+    </h1>
     <p>
         We’re excited to have you on board at <strong>SmartFleet VRS</strong>!
         Your account has been created successfully, and you can now explore our platform’s features.
@@ -48,7 +50,7 @@
         — The VRSPFAB Team
     </p>
     <div class="footer">
-        &copy; {{year}} SmartFleet VRS. All rights reserved.
+        &copy; <span th:text="${year}">2025</span> SmartFleet VRS. All rights reserved.
     </div>
 </div>
 </body>
