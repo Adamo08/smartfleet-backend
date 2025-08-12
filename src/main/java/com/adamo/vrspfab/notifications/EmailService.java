@@ -44,4 +44,35 @@ public class EmailService {
             // Optionally, throw a custom exception or queue for retry
         }
     }
+
+
+
+    /**
+     * Sends a welcome email to a new user.
+     *
+     * @param to The recipient's email address.
+     * @param username The username of the new user.
+     */
+    @Async
+    public void sendWelcomeEmail(String to, String username) {
+        String subject = "Welcome to VRSPFAB!";
+        String templateName = "welcome-email";
+        Map<String, Object> templateModel = Map.of("username", username);
+        sendNotificationEmail(to, subject, templateName, templateModel);
+    }
+
+
+    /**
+     * Sends a password reset email with a reset link.
+     *
+     * @param to The recipient's email address.
+     * @param resetLink The link to reset the password.
+     */
+    @Async
+    public void sendResetPasswordEmail(String to, String resetLink) {
+        String subject = "Reset Your Password";
+        String templateName = "reset-password-email";
+        Map<String, Object> templateModel = Map.of("resetLink", resetLink);
+        sendNotificationEmail(to, subject, templateName, templateModel);
+    }
 }
