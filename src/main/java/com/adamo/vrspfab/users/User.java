@@ -57,6 +57,13 @@ public class User {
     @JoinColumn(name = "address_id", referencedColumnName = "id")
     private Address address;
 
+    // Password reset fields
+    @Column(name = "reset_token")
+    private String resetToken;
+
+    @Column(name = "reset_token_expiry")
+    private LocalDateTime resetTokenExpiry;
+
     // Timestamp fields
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
