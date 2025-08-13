@@ -22,6 +22,9 @@ public class AuthSecurityRules implements SecurityRules {
                 // New: OAuth initiation endpoint
                 .requestMatchers(HttpMethod.GET, "/auth/oauth/**").permitAll()
 
+                // New: Custom OAuth callback endpoints
+                .requestMatchers(HttpMethod.GET, "/auth/oauth2/callback/**").permitAll()
+
                 // Existing OAuth2 login rules
                 .requestMatchers(HttpMethod.GET, "/oauth2/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/oauth2/authorization/**").permitAll()
