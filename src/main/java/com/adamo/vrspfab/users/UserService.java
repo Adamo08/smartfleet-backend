@@ -98,7 +98,7 @@ public class UserService {
         userRepository.save(user);
         
         // Send email with reset link
-        String resetLink = "https://localhost:8080/auth/reset-password?token=" + resetToken;
+        String resetLink = "http://localhost:4200/auth/reset-password?token=" + resetToken;
         emailService.sendResetPasswordEmail(user.getEmail(), resetLink);
     }
 

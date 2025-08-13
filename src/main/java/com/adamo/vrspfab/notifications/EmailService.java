@@ -58,6 +58,7 @@ public class EmailService {
         String subject = "Welcome to VRSPFAB!";
         String templateName = "welcome-email";
         Map<String, Object> templateModel = Map.of("username", username);
+        log.info("Sending {} email notification to {}", subject, to);
         sendNotificationEmail(to, subject, templateName, templateModel);
     }
 
@@ -73,6 +74,9 @@ public class EmailService {
         String subject = "Reset Your Password";
         String templateName = "reset-password-email";
         Map<String, Object> templateModel = Map.of("resetLink", resetLink);
+
+        log.info("Sending {} email notification to {}", subject, resetLink);
+
         sendNotificationEmail(to, subject, templateName, templateModel);
     }
 }
