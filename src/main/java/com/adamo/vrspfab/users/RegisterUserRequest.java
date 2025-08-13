@@ -23,8 +23,8 @@ public class RegisterUserRequest {
 
     @NotBlank(message = "Phone number is required")
     @Pattern(
-            regexp = "^0[7|6][0-9]{8,13}$",
-             message = "Phone number must start with 07 or 06 and be followed by 8 to 13 digits."
+            regexp = "^0[7|6][0-9]{8}$",
+             message = "Phone number must start with 07 or 06 and be followed by 8 digits."
     )
     private String phoneNumber;
 
