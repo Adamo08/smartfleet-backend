@@ -11,11 +11,14 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Map;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -24,6 +27,9 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    
+    @Value("${app.frontend.url:http://localhost:4200}")
+    private String frontendUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
@@ -43,10 +49,10 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         log.debug("Email from oauth attributes: {}", email);
 
         if (email == null || email.isBlank()) {
-            log.warn("No email present in OAuth attributes, sending 400. Attributes: {}", attrs);
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"email_not_provided_by_provider\"}");
+            log.warn("No email present in OAuth attributes, redirecting to frontend with error. Attributes: {}", attrs);
+            String errorUrl = frontendUrl + "/auth/oauth-callback?error=email_not_provided&provider=" + 
+                            oauthToken.getAuthorizedClientRegistrationId();
+            response.sendRedirect(errorUrl);
             return;
         }
 
@@ -58,7 +64,8 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
             provider = AuthProvider.valueOf(registrationId.toUpperCase());
         } catch (IllegalArgumentException e) {
             log.warn("Unknown OAuth2 provider: {}", registrationId);
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unsupported OAuth2 provider");
+            String errorUrl = frontendUrl + "/auth/oauth-callback?error=unsupported_provider&provider=" + registrationId;
+            response.sendRedirect(errorUrl);
             return;
         }
 
@@ -104,12 +111,14 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
         log.debug("Generated accessToken length={} refreshToken length={}", accessToken.length(), refreshToken.length());
 
-        // Return JSON (or set cookies if you prefer)
-        response.setContentType("application/json");
-        String json = String.format("{\"accessToken\":\"%s\",\"refreshToken\":\"%s\"}", accessToken, refreshToken);
-        response.getWriter().write(json);
-        response.getWriter().flush();
+        // Redirect to frontend with tokens as query parameters
+        String redirectUrl = frontendUrl + "/auth/oauth-callback?" +
+                           "accessToken=" + URLEncoder.encode(accessToken, StandardCharsets.UTF_8) +
+                           "&refreshToken=" + URLEncoder.encode(refreshToken, StandardCharsets.UTF_8) +
+                           "&provider=" + registrationId +
+                           "&email=" + URLEncoder.encode(email, StandardCharsets.UTF_8);
 
-        log.info("OAuth login complete for user id={}, email={}", user.getId(), user.getEmail());
+        log.info("Redirecting to frontend OAuth callback for user id={}, email={}", user.getId(), user.getEmail());
+        response.sendRedirect(redirectUrl);
     }
 }
