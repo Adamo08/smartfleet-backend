@@ -61,6 +61,15 @@ public class UserService {
 
     public UserDto updateUser(Long userId, UpdateUserRequest request) {
         var user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+
+
+        // Check if phone is being updated and if it already exists
+        if (request.getPhoneNumber() != null &&
+            userRepository.existsByPhoneNumberAndIdNot(request.getPhoneNumber(), userId)) {
+            throw new DuplicateFieldException("Phone number already exists");
+        }
+
+
         userMapper.update(request, user);
         userRepository.save(user);
 

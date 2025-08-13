@@ -40,4 +40,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return an Optional containing the User if found, or empty if not found
      */
     Optional<User> findByResetToken(String resetToken);
+
+
+    /**
+     * Checks if a user exists by their phone number, excluding a specific user ID.
+     *
+     * @param phoneNumber the phone number of the user
+     * @param userId the ID of the user to exclude from the check
+     * @return true if a user with the given phone number exists and is not the specified user, false otherwise
+     */
+    boolean existsByPhoneNumberAndIdNot(String phoneNumber, Long userId);
 }
