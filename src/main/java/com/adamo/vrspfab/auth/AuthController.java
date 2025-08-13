@@ -91,26 +91,6 @@ public class AuthController {
         response.sendRedirect("/oauth2/authorization/" + provider);
     }
 
-    /**
-     * Custom OAuth callback endpoint for Google
-     */
-    @GetMapping("/oauth2/callback/google")
-    public void googleOAuthCallback(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        // Redirect to the default Spring Security OAuth2 callback
-        // This will trigger our OAuth2AuthenticationSuccessHandler
-        response.sendRedirect("/login/oauth2/code/google");
-    }
-
-    /**
-     * Custom OAuth callback endpoint for Facebook
-     */
-    @GetMapping("/oauth2/callback/facebook")
-    public void facebookOAuthCallback(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        // Redirect to the default Spring Security OAuth2 callback
-        // This will trigger our OAuth2AuthenticationSuccessHandler
-        response.sendRedirect("/login/oauth2/code/facebook");
-    }
-
     @GetMapping("/me")
     public ResponseEntity<UserDto> me() {
         var user = authService.getCurrentUser();

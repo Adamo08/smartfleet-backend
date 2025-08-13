@@ -25,16 +25,16 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope: openid, profile, email
-            redirect-uri: "{baseUrl}/auth/oauth2/callback/google"
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
           facebook:
             client-id: ${FACEBOOK_CLIENT_ID}
             client-secret: ${FACEBOOK_CLIENT_SECRET}
             scope: email, public_profile
-            redirect-uri: "{baseUrl}/auth/oauth2/callback/facebook"
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
         provider:
           facebook:
-            authorization-uri: https://www.facebook.com/dialog/oauth
-            token-uri: https://graph.facebook.com/oauth/access_token
+            authorization-uri: https://www.facebook.com/v17.0/dialog/oauth
+            token-uri: https://graph.facebook.com/v17.0/oauth/access_token
             user-info-uri: https://graph.facebook.com/me?fields=id,email,first_name,last_name,picture
             user-name-attribute: id
           google:
@@ -43,10 +43,6 @@ spring:
             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
             user-name-attribute: sub
 
-# Frontend configuration for OAuth redirects
-app:
-  frontend:
-    url: ${FRONTEND_URL:http://localhost:4200}
 
 
 #  mail:
@@ -88,6 +84,15 @@ paypal:
 
 payment:
   provider: paypal # or stripe
+
+
+# Frontend configuration for OAuth redirects
+app:
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:4200}
+
+
+
 
 
 logging:
