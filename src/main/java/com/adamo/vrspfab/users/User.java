@@ -48,7 +48,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "auth_provider")
-    private AuthProvider authProvider;
+    private AuthProvider authProvider = AuthProvider.LOCAL; // Default to local authentication
 
     @Column(name = "provider_id", unique = false)
     private String providerId;
@@ -56,6 +56,13 @@ public class User {
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "address_id", referencedColumnName = "id")
     private Address address;
+
+    // Password reset fields
+    @Column(name = "reset_token")
+    private String resetToken;
+
+    @Column(name = "reset_token_expiry")
+    private LocalDateTime resetTokenExpiry;
 
     // Timestamp fields
     @Column(name = "created_at", updatable = false)

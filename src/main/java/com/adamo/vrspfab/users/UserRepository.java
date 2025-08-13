@@ -32,4 +32,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return true if a user with the given phone number exists, false otherwise
      */
     boolean existsByPhoneNumber(String phoneNumber);
+
+    /**
+     * Finds a user by their reset token.
+     *
+     * @param resetToken the reset token
+     * @return an Optional containing the User if found, or empty if not found
+     */
+    Optional<User> findByResetToken(String resetToken);
 }

@@ -9,6 +9,7 @@ import com.adamo.vrspfab.reservations.ReservationConflictException;
 import com.adamo.vrspfab.slots.InvalidSlotStateException;
 import com.adamo.vrspfab.slots.InvalidSlotTimeException;
 import com.adamo.vrspfab.testimonials.DuplicateTestimonialException;
+import com.adamo.vrspfab.users.UserNotFoundException;
 import com.adamo.vrspfab.vehicles.DuplicateLicensePlateException;
 import com.adamo.vrspfab.vehicles.InvalidVehicleDataException;
 import com.adamo.vrspfab.vehicles.InvalidVehicleStatusUpdateException;
@@ -103,6 +104,27 @@ public class GlobalExceptionHandler {
                 HttpStatus.NOT_FOUND,
                 "Not Found",
                 errorMessage,
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
+
+    /**
+     * Handles UserNotFoundException, returning a 404 Not Found status.
+     *
+     * @param ex The UserNotFoundException.
+     * @param request The WebRequest.
+     * @return ResponseEntity containing the error details.
+     */
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorDto> handleUserNotFoundException(
+            UserNotFoundException ex, WebRequest request
+    ) {
+        log.warn("User not found: {}", ex.getMessage());
+        return buildErrorResponse(
+                HttpStatus.NOT_FOUND,
+                "Not Found",
+                "User not found: " + ex.getMessage(),
                 request.getDescription(false).replace("uri=", "")
         );
     }
