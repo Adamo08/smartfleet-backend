@@ -54,12 +54,22 @@ public class NotificationController {
         return ResponseEntity.noContent().build();
     }
 
-
     @PostMapping("/broadcast")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "[ADMIN] Broadcast a notification", description = "Sends a notification to all users in the system.")
     public ResponseEntity<Map<String, String>> broadcastNotification(@Valid @RequestBody AdminNotificationRequest request) {
         notificationService.broadcastNotification(request);
         return ResponseEntity.ok(Map.of("message", "Broadcast initiated successfully."));
+    }
+
+    @PostMapping("/test")
+    @Operation(summary = "Test real-time notification", description = "Sends a test notification to the current user for testing WebSocket functionality.")
+    public ResponseEntity<Map<String, String>> testRealTimeNotification() {
+        notificationService.createAndDispatchNotification(
+            notificationService.getCurrentUser(),
+            NotificationType.GENERAL_UPDATE,
+            "This is a test real-time notification! 🚀"
+        );
+        return ResponseEntity.ok(Map.of("message", "Test notification sent successfully."));
     }
 }

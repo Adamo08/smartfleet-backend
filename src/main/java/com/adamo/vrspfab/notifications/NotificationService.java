@@ -78,6 +78,12 @@ public class NotificationService {
         List<User> allUsers = userRepository.findAll();
         log.info("Broadcasting notification to {} users", allUsers.size());
         for (User user : allUsers) {
+
+            if (user == null || user.getEmail() == null) {
+                log.warn("Skipping user with null email");
+                continue; // Skip users without an email
+            }
+
             // Using a separate transaction for each user might be better for large user bases
             createAndDispatchNotification(user, request.getType(), request.getMessage());
         }
@@ -150,5 +156,15 @@ public class NotificationService {
 
         notificationRepository.delete(notification);
         log.info("Deleted notification ID {} for user {}", notificationId, currentUser.getEmail());
+    }
+
+
+    /**
+     * Helper method to get the current authenticated user.
+     *
+     * @return The current authenticated user.
+     */
+    public User getCurrentUser() {
+        return securityUtilsService.getCurrentAuthenticatedUser();
     }
 }
