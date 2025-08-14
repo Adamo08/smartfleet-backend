@@ -22,11 +22,17 @@ public class WebSocketMessageHandler {
      */
     @SubscribeMapping("/user/queue/notifications")
     public void handleUserSubscription() {
+        log.info("=== WebSocket Message Handler: User Subscription Attempt ===");
         try {
             User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
-            log.info("User {} subscribed to notifications", currentUser.getEmail());
+            log.info("✅ User subscription successful: {} ({})", currentUser.getEmail(), currentUser.getId());
+            log.info("✅ User role: {}", currentUser.getRole());
+            log.info("✅ User notification preferences: realTime={}, email={}", 
+                    currentUser.getNotificationPreferences() != null ? currentUser.getNotificationPreferences().isRealTimeEnabled() : "null",
+                    currentUser.getNotificationPreferences() != null ? currentUser.getNotificationPreferences().isEmailEnabled() : "null");
         } catch (Exception e) {
-            log.warn("Unauthorized user attempted to subscribe to notifications");
+            log.error("❌ User subscription failed: {}", e.getMessage(), e);
+            log.error("❌ Stack trace: ", e);
         }
     }
 
@@ -36,6 +42,13 @@ public class WebSocketMessageHandler {
     @MessageMapping("/ping")
     @SendToUser("/queue/pong")
     public String handlePing() {
+        log.info("=== WebSocket Message Handler: Ping Received ===");
+        try {
+            User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+            log.info("✅ Ping from authenticated user: {} ({})", currentUser.getEmail(), currentUser.getId());
+        } catch (Exception e) {
+            log.error("❌ Ping from unauthenticated user: {}", e.getMessage());
+        }
         return "pong";
     }
 
@@ -45,7 +58,14 @@ public class WebSocketMessageHandler {
     @MessageMapping("/message")
     @SendTo("/topic/messages")
     public String handleMessage(String message) {
+        log.info("=== WebSocket Message Handler: General Message ===");
         log.info("Received message: {}", message);
+        try {
+            User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+            log.info("✅ Message from authenticated user: {} ({})", currentUser.getEmail(), currentUser.getId());
+        } catch (Exception e) {
+            log.error("❌ Message from unauthenticated user: {}", e.getMessage());
+        }
         return "Message received: " + message;
     }
 }

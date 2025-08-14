@@ -32,6 +32,11 @@ public class NotificationService {
      */
     @Transactional
     public void createAndDispatchNotification(User user, NotificationType type, String message) {
+        log.info("=== NotificationService: Creating and Dispatching Notification ===");
+        log.info("User: {} ({})", user.getEmail(), user.getId());
+        log.info("Type: {}", type);
+        log.info("Message: {}", message);
+        
         // Step 1: Save the notification to the database (source of truth)
         Notification notification = new Notification();
         notification.setUser(user);
@@ -39,34 +44,56 @@ public class NotificationService {
         notification.setMessage(message);
         notification.setRead(false);
         Notification savedNotification = notificationRepository.save(notification);
-        log.info("Saved notification ID {} for user {}", savedNotification.getId(), user.getEmail());
+        log.info("✅ Saved notification ID {} for user {}", savedNotification.getId(), user.getEmail());
 
         // Step 2: Fetch user preferences (or use defaults)
         UserNotificationPreferences preferences = user.getNotificationPreferences();
         if (preferences == null) {
-            log.warn("User {} has no preferences record, using defaults (true/true)", user.getEmail());
+            log.warn("⚠️ User {} has no preferences record, using defaults (true/true)", user.getEmail());
             preferences = new UserNotificationPreferences(); // Default preferences are true
         }
+        
+        log.info("User preferences - RealTime: {}, Email: {}", 
+                preferences.isRealTimeEnabled(), preferences.isEmailEnabled());
 
         NotificationDto dto = notificationMapper.toDto(savedNotification);
+        log.info("Notification DTO created: {}", dto);
 
         // Step 3: Dispatch via Real-Time Channel
         if (preferences.isRealTimeEnabled()) {
-            messagingTemplate.convertAndSendToUser(
-                    user.getEmail(), "/queue/notifications", dto
-            );
-            log.info("Dispatched real-time notification ID {} to user {}", savedNotification.getId(), user.getEmail());
+            String destination = "/user/" + user.getEmail() + "/queue/notifications";
+            log.info("🚀 Attempting to send real-time notification to destination: {}", destination);
+            
+            try {
+                messagingTemplate.convertAndSendToUser(
+                        user.getEmail(), "/queue/notifications", dto
+                );
+                log.info("✅ Successfully dispatched real-time notification ID {} to user {} at destination: {}", 
+                        savedNotification.getId(), user.getEmail(), destination);
+            } catch (Exception e) {
+                log.error("❌ Failed to dispatch real-time notification to user {}: {}", user.getEmail(), e.getMessage(), e);
+            }
+        } else {
+            log.info("⏭️ Skipping real-time notification for user {} (disabled in preferences)", user.getEmail());
         }
 
         // Step 4: Dispatch via Email Channel
         if (preferences.isEmailEnabled()) {
+            log.info("📧 Sending email notification to user: {}", user.getEmail());
             Map<String, Object> emailModel = Map.of(
                     "username", user.getFirstName(),
                     "message", message,
                     "notificationType", type.toString(),
                     "subject", "You have a new notification: " + type.toString()
             );
-            emailService.sendNotificationEmail(user.getEmail(), (String)emailModel.get("subject"), "notification-email.html", emailModel);
+            try {
+                emailService.sendNotificationEmail(user.getEmail(), (String)emailModel.get("subject"), "notification-email.html", emailModel);
+                log.info("✅ Email notification sent successfully to user: {}", user.getEmail());
+            } catch (Exception e) {
+                log.error("❌ Failed to send email notification to user {}: {}", user.getEmail(), e.getMessage(), e);
+            }
+        } else {
+            log.info("⏭️ Skipping email notification for user {} (disabled in preferences)", user.getEmail());
         }
     }
 
@@ -75,18 +102,37 @@ public class NotificationService {
      */
     @Transactional
     public void broadcastNotification(AdminNotificationRequest request) {
+        log.info("=== NotificationService: Broadcasting Notification ===");
+        log.info("Type: {}", request.getType());
+        log.info("Message: {}", request.getMessage());
+        
         List<User> allUsers = userRepository.findAll();
-        log.info("Broadcasting notification to {} users", allUsers.size());
+        log.info("📢 Broadcasting notification to {} users", allUsers.size());
+        
+        int successCount = 0;
+        int failureCount = 0;
+        
         for (User user : allUsers) {
-
             if (user == null || user.getEmail() == null) {
-                log.warn("Skipping user with null email");
+                log.warn("⚠️ Skipping user with null email");
+                failureCount++;
                 continue; // Skip users without an email
             }
 
-            // Using a separate transaction for each user might be better for large user bases
-            createAndDispatchNotification(user, request.getType(), request.getMessage());
+            log.info("Processing user: {} ({})", user.getEmail(), user.getId());
+            
+            try {
+                // Using a separate transaction for each user might be better for large user bases
+                createAndDispatchNotification(user, request.getType(), request.getMessage());
+                successCount++;
+                log.info("✅ Successfully processed notification for user: {}", user.getEmail());
+            } catch (Exception e) {
+                failureCount++;
+                log.error("❌ Failed to process notification for user {}: {}", user.getEmail(), e.getMessage(), e);
+            }
         }
+        
+        log.info("📊 Broadcast completed - Success: {}, Failures: {}", successCount, failureCount);
     }
 
     /**
