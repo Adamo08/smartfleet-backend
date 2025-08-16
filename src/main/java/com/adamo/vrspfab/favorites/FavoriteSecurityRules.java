@@ -19,7 +19,7 @@ public class FavoriteSecurityRules implements SecurityRules {
                 // Only ADMINs can view all favorites (with filters)
                 .requestMatchers(HttpMethod.GET, "/favorites").hasRole("ADMIN")
                 // Customers can create favorites (service will ensure it's for themselves and not a duplicate)
-                .requestMatchers(HttpMethod.POST, "/favorites").hasRole("CUSTOMER")
+                .requestMatchers(HttpMethod.POST, "/favorites").authenticated()
                 // Customers can delete their own favorites (service will ensure ownership)
                 // Admins can also delete any favorite
                 .requestMatchers(HttpMethod.DELETE, "/favorites/**").authenticated(); // Authenticated user can delete (service checks ownership/admin)
