@@ -1,5 +1,6 @@
 package com.adamo.vrspfab.auth;
 
+import com.adamo.vrspfab.common.ErrorDto;
 import com.adamo.vrspfab.users.UserDto;
 import com.adamo.vrspfab.users.UserMapper;
 import com.adamo.vrspfab.users.UserService;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 import com.adamo.vrspfab.common.dto.ForgotPasswordRequest;
 import com.adamo.vrspfab.common.dto.ResetPasswordRequest;
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.time.LocalDateTime;
 
 @AllArgsConstructor
 @RestController
@@ -120,7 +123,16 @@ public class AuthController {
      * @return ResponseEntity with status 401 (Unauthorized).
      */
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<Void> handleBadCredentialsException() {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized
+    public ResponseEntity<ErrorDto> handleBadCredentialsException() {
+        return new ResponseEntity<>(
+                new ErrorDto(
+                        LocalDateTime.now(),
+                        HttpStatus.UNAUTHORIZED.value(),
+                        "Unauthorized",
+                        "Invalid credentials",
+                        "/auth/login"
+                ),
+                HttpStatus.UNAUTHORIZED
+        );
     }
 }

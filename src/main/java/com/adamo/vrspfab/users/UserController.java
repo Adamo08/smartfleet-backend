@@ -57,15 +57,4 @@ public class UserController {
             @RequestBody ChangePasswordRequest request) {
         userService.changePassword(id, request);
     }
-
-
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<Void> handleUserNotFound() {
-        return ResponseEntity.notFound().build();
-    }
-
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Void> handleAccessDenied() {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-    }
 }
