@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +33,14 @@ public class NotificationService {
      */
     @Transactional
     public void createAndDispatchNotification(User user, NotificationType type, String message) {
+        createAndDispatchNotification(user, type, message, null);
+    }
+
+    /**
+     * Overload that accepts extra template model data for email rendering.
+     */
+    @Transactional
+    public void createAndDispatchNotification(User user, NotificationType type, String message, Map<String, Object> extraModel) {
         log.info("=== NotificationService: Creating and Dispatching Notification ===");
         log.info("User: {} ({})", user.getEmail(), user.getId());
         log.info("Type: {}", type);
@@ -80,20 +89,76 @@ public class NotificationService {
         // Step 4: Dispatch via Email Channel
         if (preferences.isEmailEnabled()) {
             log.info("📧 Sending email notification to user: {}", user.getEmail());
-            Map<String, Object> emailModel = Map.of(
-                    "username", user.getFirstName(),
-                    "message", message,
-                    "notificationType", type.toString(),
-                    "subject", "You have a new notification: " + type.toString()
-            );
+            TemplateInfo templateInfo = resolveTemplate(type);
+            Map<String, Object> emailModel = new HashMap<>();
+            emailModel.put("username", user.getFirstName());
+            emailModel.put("message", message);
+            emailModel.put("notificationType", type.toString());
+            emailModel.put("subject", templateInfo.subject);
+            if (extraModel != null) {
+                emailModel.putAll(extraModel);
+            }
             try {
-                emailService.sendNotificationEmail(user.getEmail(), (String)emailModel.get("subject"), "notification-email.html", emailModel);
+                emailService.sendNotificationEmail(user.getEmail(), templateInfo.subject, templateInfo.templateName, emailModel);
                 log.info("✅ Email notification sent successfully to user: {}", user.getEmail());
             } catch (Exception e) {
                 log.error("❌ Failed to send email notification to user {}: {}", user.getEmail(), e.getMessage(), e);
             }
         } else {
             log.info("⏭️ Skipping email notification for user {} (disabled in preferences)", user.getEmail());
+        }
+    }
+
+    /**
+     * Creates and dispatches a notification but only via real-time channel (no email), while still persisting it.
+     */
+    @Transactional
+    public void createAndDispatchRealTimeOnly(User user, NotificationType type, String message) {
+        createAndDispatchRealTimeOnly(user, type, message, null);
+    }
+
+    @Transactional
+    public void createAndDispatchRealTimeOnly(User user, NotificationType type, String message, Map<String, Object> extraModel) {
+        log.info("=== NotificationService: Real-Time Only Notification ===");
+        Notification notification = new Notification();
+        notification.setUser(user);
+        notification.setType(type);
+        notification.setMessage(message);
+        notification.setRead(false);
+        Notification saved = notificationRepository.save(notification);
+
+        UserNotificationPreferences preferences = user.getNotificationPreferences();
+        if (preferences == null) {
+            preferences = new UserNotificationPreferences();
+        }
+        if (preferences.isRealTimeEnabled()) {
+            try {
+                messagingTemplate.convertAndSendToUser(user.getEmail(), "/queue/notifications", notificationMapper.toDto(saved));
+            } catch (Exception e) {
+                log.error("Failed to dispatch real-time only notification: {}", e.getMessage(), e);
+            }
+        }
+    }
+
+    private TemplateInfo resolveTemplate(NotificationType type) {
+        // Map notification types to specific templates and subjects. Fallback to generic template.
+        return switch (type) {
+            case PAYMENT_SUCCESS -> new TemplateInfo("payment-success-email", "Payment Successful");
+            case PAYMENT_FAILURE -> new TemplateInfo("payment-failure-email", "Payment Failed");
+            case REFUND_ISSUED -> new TemplateInfo("refund-issued-email", "Refund Issued");
+            case RESERVATION_PENDING -> new TemplateInfo("reservation-pending-email", "Reservation Pending");
+            case RESERVATION_CONFIRMED -> new TemplateInfo("reservation-confirmed-email", "Reservation Confirmed");
+            case RESERVATION_CANCELLED -> new TemplateInfo("reservation-cancelled-email", "Reservation Cancelled");
+            default -> new TemplateInfo("notification-email", "You have a new notification: " + type);
+        };
+    }
+
+    private static class TemplateInfo {
+        final String templateName;
+        final String subject;
+        TemplateInfo(String templateName, String subject) {
+            this.templateName = templateName;
+            this.subject = subject;
         }
     }
 
