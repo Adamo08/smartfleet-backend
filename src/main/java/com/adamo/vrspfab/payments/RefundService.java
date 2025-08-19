@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 
@@ -25,6 +27,7 @@ public class RefundService {
     private final PaymentRepository paymentRepository;
     private final ReservationRepository reservationRepository;
     private final SecurityUtilsService securityUtilsService;
+    private final com.adamo.vrspfab.notifications.NotificationService notificationService;
 
     /**
      * Processes a refund for a payment after validating ownership and input.
@@ -44,7 +47,32 @@ public class RefundService {
         PaymentProvider provider = providerFactory.getProvider(payment.getProvider())
                 .orElseThrow(() -> new PaymentException("Provider not found for payment: " + payment.getId()));
 
-        return provider.processRefund(requestDto);
+        RefundResponseDto response = provider.processRefund(requestDto);
+        // Notify user of refund outcome (non-blocking)
+        try {
+            var user = payment.getReservation().getUser();
+            if (response.getStatus() == RefundStatus.PROCESSED) {
+                notificationService.createAndDispatchNotification(
+                        user,
+                        com.adamo.vrspfab.notifications.NotificationType.REFUND_ISSUED,
+                        "Refund processed for payment #" + payment.getId() + " on reservation #" + payment.getReservation().getId(),
+                        java.util.Map.of(
+                                "paymentId", payment.getId(),
+                                "reservationId", payment.getReservation().getId(),
+                                "amount", requestDto.getAmount(),
+                                "currency", payment.getCurrency()
+                        )
+                );
+            } else if (response.getStatus() == RefundStatus.FAILED) {
+                notificationService.createAndDispatchNotification(
+                        user,
+                        com.adamo.vrspfab.notifications.NotificationType.SYSTEM_ALERT,
+                        "Refund failed for payment #" + payment.getId(),
+                        java.util.Map.of("paymentId", payment.getId())
+                );
+            }
+        } catch (Exception ignored) {}
+        return response;
     }
 
     /**
@@ -61,6 +89,21 @@ public class RefundService {
         validateOwnership(refund.getPayment().getReservation().getId());
 
         return refundMapper.toRefundDetailsDto(refund);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RefundDetailsDto> getRefundHistory(Pageable pageable) {
+        User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+        // Fetch refunds via payments owned by user; simple approach: query all refunds and filter by ownership
+        // For efficiency, consider a custom query. Here we map and filter.
+        return refundRepository.findAll(pageable)
+                .map(refund -> {
+                    if (!refund.getPayment().getReservation().getUser().getId().equals(currentUser.getId())
+                            && currentUser.getRole() != Role.ADMIN) {
+                        throw new AccessDeniedException("You do not own this refund record.");
+                    }
+                    return refundMapper.toRefundDetailsDto(refund);
+                });
     }
 
 

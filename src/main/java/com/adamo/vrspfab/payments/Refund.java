@@ -34,6 +34,18 @@ public class Refund {
     @Column(name = "reason", length = 500)
     private String reason;
 
+    @Column(name = "refund_method", length = 100)
+    private String refundMethod;
+
+    @Column(name = "additional_notes", length = 1000)
+    private String additionalNotes;
+
+    @Column(name = "contact_email", length = 255)
+    private String contactEmail;
+
+    @Column(name = "contact_phone", length = 20)
+    private String contactPhone;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private RefundStatus status;

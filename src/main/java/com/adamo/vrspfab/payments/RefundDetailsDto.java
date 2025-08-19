@@ -17,6 +17,10 @@ public class RefundDetailsDto {
     private BigDecimal amount;
     private String currency;
     private String reason;
+    private String refundMethod;
+    private String additionalNotes;
+    private String contactEmail;
+    private String contactPhone;
     private RefundStatus status;
     private LocalDateTime requestedAt;
     private LocalDateTime processedAt;

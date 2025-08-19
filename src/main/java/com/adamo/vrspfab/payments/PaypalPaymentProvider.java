@@ -175,6 +175,11 @@ public class PaypalPaymentProvider implements PaymentProvider {
         refund.setAmount(requestDto.getAmount());
         refund.setCurrency(payment.getCurrency());
         refund.setReason(requestDto.getReason());
+        // Populate additional audit/contact fields
+        refund.setRefundMethod(requestDto.getRefundMethod() != null ? requestDto.getRefundMethod() : "PAYPAL");
+        refund.setAdditionalNotes(requestDto.getAdditionalNotes());
+        refund.setContactEmail(requestDto.getContactEmail());
+        refund.setContactPhone(requestDto.getContactPhone());
         refund.setStatus(RefundStatus.PENDING); // Mark as PENDING
         refund.setProcessedAt(LocalDateTime.now());
         refundRepository.save(refund);

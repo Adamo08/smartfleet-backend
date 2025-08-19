@@ -1,6 +1,8 @@
 package com.adamo.vrspfab.payments;
 
 import com.adamo.vrspfab.reservations.Reservation;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -22,6 +25,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findWithDetailsById(Long paymentId);
 
     Optional<Payment> findByTransactionId(String transactionId);
+
+    @Query("SELECT p FROM Payment p WHERE p.reservation.user.id = :userId")
+    Page<Payment> findByReservationUserId(@Param("userId") Long userId, Pageable pageable);
+
+    @Query("SELECT p FROM Payment p WHERE p.reservation.user.id = :userId")
+    List<Payment> findByReservationUserId(@Param("userId") Long userId);
 
     long countByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 

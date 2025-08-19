@@ -115,6 +115,10 @@ public class CmiPaymentProvider implements PaymentProvider {
         refund.setAmount(requestDto.getAmount());
         refund.setCurrency(payment.getCurrency());
         refund.setReason(requestDto.getReason());
+        refund.setRefundMethod(requestDto.getRefundMethod() != null ? requestDto.getRefundMethod() : "CMI");
+        refund.setAdditionalNotes(requestDto.getAdditionalNotes());
+        refund.setContactEmail(requestDto.getContactEmail());
+        refund.setContactPhone(requestDto.getContactPhone());
         refund.setStatus(RefundStatus.PROCESSED);
         refund.setProcessedAt(LocalDateTime.now());
         refundRepository.save(refund);

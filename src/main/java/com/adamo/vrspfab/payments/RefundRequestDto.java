@@ -14,4 +14,8 @@ public class RefundRequestDto {
     @Positive(message = "Amount must be positive")
     private BigDecimal amount;
     private String reason;  // Optional reason for the refund
+    private String refundMethod;  // Optional refund method
+    private String additionalNotes;  // Optional additional notes
+    private String contactEmail;  // Optional contact email
+    private String contactPhone;  // Optional contact phone
 }
