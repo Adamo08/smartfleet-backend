@@ -17,6 +17,7 @@ public interface ReservationMapper {
     @Mapping(target = "user", source = "user")
     @Mapping(target = "vehicle", source = "vehicle")
     @Mapping(target = "slot", source = "slot")
+    @Mapping(target = "createdAt", source = "createdAt")
     DetailedReservationDto toDetailedDto(Reservation reservation);
 
     /**
@@ -25,6 +26,7 @@ public interface ReservationMapper {
      * @param reservation The source entity.
      * @return The summary DTO.
      */
+    @Mapping(target = "createdAt", source = "createdAt")
     ReservationSummaryDto toSummaryDto(Reservation reservation);
 
     /**

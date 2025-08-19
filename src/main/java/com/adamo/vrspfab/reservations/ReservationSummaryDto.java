@@ -18,4 +18,5 @@ public class ReservationSummaryDto {
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private ReservationStatus status;
+    private LocalDateTime createdAt;
 }

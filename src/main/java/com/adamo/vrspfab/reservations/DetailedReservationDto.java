@@ -21,4 +21,5 @@ public class DetailedReservationDto {
     private LocalDateTime endDate;
     private String comment;
     private ReservationStatus status;
+    private LocalDateTime createdAt;
 }

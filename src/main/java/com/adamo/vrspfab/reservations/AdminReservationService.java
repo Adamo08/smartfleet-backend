@@ -85,13 +85,23 @@ public class AdminReservationService {
             notificationService.createAndDispatchNotification(
                     savedReservation.getUser(),
                     NotificationType.RESERVATION_CONFIRMED,
-                    "Admin has confirmed your reservation for vehicle " + savedReservation.getVehicle().getBrand() + " " + savedReservation.getVehicle().getModel() + "."
+                    "Admin has confirmed your reservation for vehicle " + savedReservation.getVehicle().getBrand() + " " + savedReservation.getVehicle().getModel() + ".",
+                    java.util.Map.of(
+                            "reservationId", savedReservation.getId(),
+                            "vehicle", savedReservation.getVehicle().getBrand() + " " + savedReservation.getVehicle().getModel(),
+                            "start", savedReservation.getStartDate(),
+                            "end", savedReservation.getEndDate()
+                    )
             );
         } else if (newStatus == ReservationStatus.CANCELLED) {
             notificationService.createAndDispatchNotification(
                     savedReservation.getUser(),
                     NotificationType.RESERVATION_CANCELLED,
-                    "Your reservation for vehicle " + savedReservation.getVehicle().getBrand() + " " + savedReservation.getVehicle().getModel() + " has been cancelled by an admin."
+                    "Your reservation for vehicle " + savedReservation.getVehicle().getBrand() + " " + savedReservation.getVehicle().getModel() + " has been cancelled by an admin.",
+                    java.util.Map.of(
+                            "reservationId", savedReservation.getId(),
+                            "vehicle", savedReservation.getVehicle().getBrand() + " " + savedReservation.getVehicle().getModel()
+                    )
             );
         }
 

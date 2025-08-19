@@ -82,7 +82,13 @@ public class ReservationService {
         notificationService.createAndDispatchNotification(
                 currentUser,
                 NotificationType.RESERVATION_PENDING,
-                "Your reservation for vehicle " + vehicleDto.getBrand() + " " + vehicleDto.getModel() + " is now pending."
+                "Your reservation for vehicle " + vehicleDto.getBrand() + " " + vehicleDto.getModel() + " is now pending.",
+                java.util.Map.of(
+                        "reservationId", savedReservation.getId(),
+                        "vehicle", vehicleDto.getBrand() + " " + vehicleDto.getModel(),
+                        "start", savedReservation.getStartDate(),
+                        "end", savedReservation.getEndDate()
+                )
         );
 
         return reservationMapper.toDetailedDto(savedReservation);
@@ -174,7 +180,11 @@ public class ReservationService {
         notificationService.createAndDispatchNotification(
                 currentUser,
                 NotificationType.RESERVATION_CANCELLED,
-                "Your reservation for vehicle " + savedReservation.getVehicle().getBrand() + " " + savedReservation.getVehicle().getModel() + " has been cancelled."
+                "Your reservation for vehicle " + savedReservation.getVehicle().getBrand() + " " + savedReservation.getVehicle().getModel() + " has been cancelled.",
+                java.util.Map.of(
+                        "reservationId", savedReservation.getId(),
+                        "vehicle", savedReservation.getVehicle().getBrand() + " " + savedReservation.getVehicle().getModel()
+                )
         );
 
         return reservationMapper.toDetailedDto(savedReservation);

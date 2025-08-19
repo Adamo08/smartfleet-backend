@@ -14,10 +14,10 @@ public class ReservationSecurityRules implements SecurityRules {
                 // Publicly accessible endpoint for available slots by vehicle
                 .requestMatchers(HttpMethod.GET, "/reservations/vehicles/{vehicleId}/available-slots").permitAll()
                 // Rules for Authenticated Users (Customers)
-                .requestMatchers(HttpMethod.POST, "/reservations").hasRole("CUSTOMER")
-                .requestMatchers(HttpMethod.GET, "/reservations").hasRole("CUSTOMER")
-                .requestMatchers(HttpMethod.GET, "/reservations/{id}").hasRole("CUSTOMER")
-                .requestMatchers(HttpMethod.POST, "/reservations/{id}/cancel").hasRole("CUSTOMER")
+                .requestMatchers(HttpMethod.POST, "/reservations").authenticated()
+                .requestMatchers(HttpMethod.GET, "/reservations").authenticated()
+                .requestMatchers(HttpMethod.GET, "/reservations/{id}").authenticated()
+                .requestMatchers(HttpMethod.POST, "/reservations/{id}/cancel").authenticated()
                 // Rules for Administrators
                 .requestMatchers("/admin/reservations/**").hasRole("ADMIN");
     }
