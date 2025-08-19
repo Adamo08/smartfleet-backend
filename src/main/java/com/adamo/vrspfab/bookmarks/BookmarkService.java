@@ -2,6 +2,8 @@ package com.adamo.vrspfab.bookmarks;
 
 import com.adamo.vrspfab.common.ResourceNotFoundException;
 import com.adamo.vrspfab.common.SecurityUtilsService;
+import com.adamo.vrspfab.notifications.NotificationService;
+import com.adamo.vrspfab.notifications.NotificationType;
 import com.adamo.vrspfab.reservations.ReservationMapper;
 import com.adamo.vrspfab.users.User;
 import com.adamo.vrspfab.users.UserService;
@@ -33,6 +35,7 @@ public class BookmarkService {
     private final ReservationService reservationService;
     private final SecurityUtilsService securityUtilsService;
     private final ReservationMapper reservationMapper;
+    private final NotificationService notificationService;
 
     @Transactional
     public BookmarkDto createBookmark(BookmarkDto bookmarkDto) {
@@ -80,6 +83,13 @@ public class BookmarkService {
 
         Bookmark savedBookmark = bookmarkRepository.save(bookmark);
         logger.info("Bookmark created successfully with ID: {}", savedBookmark.getId());
+        try {
+            notificationService.createAndDispatchRealTimeOnly(
+                    user,
+                    NotificationType.GENERAL_UPDATE,
+                    "Bookmarked reservation #" + reservation.getId()
+            );
+        } catch (Exception ignored) {}
         return bookmarkMapper.toDto(savedBookmark);
     }
 
@@ -130,6 +140,13 @@ public class BookmarkService {
 
         bookmarkRepository.delete(bookmark);
         logger.info("Bookmark with ID: {} deleted successfully.", id);
+        try {
+            notificationService.createAndDispatchRealTimeOnly(
+                    authenticatedUser,
+                    com.adamo.vrspfab.notifications.NotificationType.GENERAL_UPDATE,
+                    "Removed bookmark for reservation #" + bookmark.getReservation().getId()
+            );
+        } catch (Exception ignored) {}
     }
 
     @Transactional(readOnly = true)
