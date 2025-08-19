@@ -9,4 +9,6 @@ public class VehicleSummaryDto {
     private String brand;
     private String model;
     private String licensePlate;
+    private Integer year;
+    private String imageUrl;
 }

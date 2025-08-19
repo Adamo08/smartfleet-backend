@@ -33,5 +33,7 @@ public interface VehicleMapper {
     @Mapping(target = "brand", source = "brand")
     @Mapping(target = "model", source = "model")
     @Mapping(target = "licensePlate", source = "licensePlate")
+    @Mapping(target = "year", source = "year")
+    @Mapping(target = "imageUrl", source = "imageUrl")
     VehicleSummaryDto toSummaryDto(Vehicle vehicle);
 }
