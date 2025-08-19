@@ -2,6 +2,7 @@ package com.adamo.vrspfab.favorites;
 
 import com.adamo.vrspfab.common.ResourceNotFoundException;
 import com.adamo.vrspfab.common.SecurityUtilsService;
+import com.adamo.vrspfab.notifications.NotificationService;
 import com.adamo.vrspfab.users.User;
 import com.adamo.vrspfab.users.UserService;
 import com.adamo.vrspfab.vehicles.Vehicle;
@@ -22,6 +23,9 @@ import org.springframework.security.access.AccessDeniedException;
 import com.adamo.vrspfab.users.Role;
 
 import java.util.Optional;
+import java.util.List;
+import java.util.Map;
+import com.adamo.vrspfab.notifications.NotificationType;
 
 
 @AllArgsConstructor
@@ -36,6 +40,7 @@ public class FavoriteService {
     private final VehicleService vehicleService;
     private final VehicleMapper vehicleMapper;
     private final SecurityUtilsService securityUtilsService;
+    private final NotificationService notificationService;
 
 
     @Transactional
@@ -75,6 +80,13 @@ public class FavoriteService {
 
         Favorite savedFavorite = favoriteRepository.save(favorite);
         logger.info("Favorite created successfully with ID: {}", savedFavorite.getId());
+        try {
+            notificationService.createAndDispatchNotification(
+                    user,
+                    com.adamo.vrspfab.notifications.NotificationType.GENERAL_UPDATE,
+                    "Added vehicle " + vehicle.getBrand() + " " + vehicle.getModel() + " to favorites."
+            );
+        } catch (Exception ignored) {}
         return favoriteMapper.toDto(savedFavorite);
     }
 
@@ -103,26 +115,41 @@ public class FavoriteService {
 
     @Transactional
     public void deleteFavorite(Long id) {
-        logger.info("Attempting to delete favorite with ID: {}", id);
-        Favorite favorite = favoriteRepository.findWithDetailsById(id)
-                .orElseThrow(() -> {
-                    logger.warn("Favorite not found with ID: {}", id);
-                    return new ResourceNotFoundException("Favorite not found with ID: " + id, "Favorite");
-                });
-
-        User authenticatedUser = securityUtilsService.getCurrentAuthenticatedUser();
-        boolean isAdmin = authenticatedUser.getRole().equals(Role.ADMIN);
-
-        // Allow deletion if:
-        // 1. User is the owner of the favorite
-        // 2. User is an ADMIN
-        if (!favorite.getUser().getId().equals(authenticatedUser.getId()) && !isAdmin) {
-            logger.warn("Access denied for user {} to delete favorite {} (not owner, not admin).", authenticatedUser.getId(), id);
-            throw new AccessDeniedException("Access denied to delete this favorite.");
+        Favorite favorite = favoriteRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Favorite not found with id: " + id));
+        
+        // Check if the current user owns this favorite
+        User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+        if (!favorite.getUser().getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("You can only delete your own favorites");
         }
-
+        
         favoriteRepository.delete(favorite);
-        logger.info("Favorite with ID: {} deleted successfully.", id);
+        
+        // Send real-time notification for favorite removal
+        notificationService.createAndDispatchRealTimeOnly(
+            currentUser, 
+            NotificationType.FAVORITE_REMOVED, 
+            "Vehicle removed from favorites", 
+            Map.of("vehicleId", favorite.getVehicle().getId())
+        );
+    }
+
+    public void deleteAllMyFavorites() {
+        User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+        List<Favorite> userFavorites = favoriteRepository.findByUserId(currentUser.getId());
+        
+        if (!userFavorites.isEmpty()) {
+            favoriteRepository.deleteAll(userFavorites);
+            
+            // Send real-time notification for bulk favorite removal
+            notificationService.createAndDispatchRealTimeOnly(
+                currentUser, 
+                NotificationType.FAVORITE_REMOVED, 
+                "All favorites cleared", 
+                Map.of("count", userFavorites.size())
+            );
+        }
     }
 
     @Transactional(readOnly = true)

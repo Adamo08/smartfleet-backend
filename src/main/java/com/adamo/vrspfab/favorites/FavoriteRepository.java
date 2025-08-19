@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.lang.NonNull;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -40,6 +41,18 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
      */
     @EntityGraph(attributePaths = {"user", "vehicle"}, type = EntityGraph.EntityGraphType.LOAD)
     Page<Favorite> findByUserId(Long userId, @NonNull Pageable pageable);
+
+
+
+    /**
+     * Retrieves a list of all Favorite entities associated with a specific user ID.
+     * User and Vehicle details are eagerly fetched.
+     *
+     * @param userId The ID of the user whose favorites are to be retrieved.
+     * @return A {@link Page} of Favorite entities for the specified user.
+     */
+    @EntityGraph(attributePaths = {"user", "vehicle"}, type = EntityGraph.EntityGraphType.LOAD)
+    List<Favorite> findByUserId(Long userId);
 
     /**
      * Finds a Favorite entity by a specific user ID and vehicle ID.

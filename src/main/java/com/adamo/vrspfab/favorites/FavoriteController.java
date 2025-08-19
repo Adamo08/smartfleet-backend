@@ -40,6 +40,13 @@ public class FavoriteController {
         favoriteService.deleteFavorite(id);
     }
 
+    @DeleteMapping("/my/all")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAllMyFavorites() {
+        logger.info("Received request to delete all favorites for current user");
+        favoriteService.deleteAllMyFavorites();
+    }
+
     @GetMapping
     public ResponseEntity<Page<FavoriteDto>> getAllFavorites(
             @RequestParam(defaultValue = "0") int page,
