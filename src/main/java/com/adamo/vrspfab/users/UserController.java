@@ -46,6 +46,14 @@ public class UserController {
         return userService.updateUser(id, request);
     }
 
+    @PatchMapping("/{id}/role")
+    public UserDto updateUserRole(
+            @PathVariable Long id,
+            @RequestBody RoleUpdateRequest request
+    ) {
+        return userService.updateUserRole(id, request.getRole());
+    }
+
     @DeleteMapping("/{id}")
     public void deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);

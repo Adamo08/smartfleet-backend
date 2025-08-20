@@ -23,8 +23,8 @@ public class UserService {
     private final EmailService emailService;
 
     public Iterable<UserDto> getAllUsers(String sortBy) {
-        if (!Set.of("name", "email").contains(sortBy))
-            sortBy = "name";
+        if (!Set.of("firstName", "email").contains(sortBy))
+            sortBy = "firstName";
 
         return userRepository.findAll(Sort.by(sortBy))
                 .stream()
@@ -73,6 +73,13 @@ public class UserService {
         userMapper.update(request, user);
         userRepository.save(user);
 
+        return userMapper.toDto(user);
+    }
+
+    public UserDto updateUserRole(Long userId, Role role) {
+        var user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+        user.setRole(role);
+        userRepository.save(user);
         return userMapper.toDto(user);
     }
 
