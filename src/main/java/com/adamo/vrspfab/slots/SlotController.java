@@ -41,6 +41,22 @@ public class SlotController {
         return ResponseEntity.ok(slots);
     }
 
+    @GetMapping("/vehicle/{vehicleId}")
+    public ResponseEntity<List<SlotDto>> getAllSlotsForVehicle(
+            @PathVariable Long vehicleId,
+            @RequestParam(required = false) String start,
+            @RequestParam(required = false) String end
+    ) {
+        logger.info("Received request to get all slots (any availability) for vehicle ID: {}", vehicleId);
+        java.time.LocalDateTime startTime = null;
+        java.time.LocalDateTime endTime = null;
+        if (start != null && end != null) {
+            startTime = java.time.LocalDateTime.parse(start);
+            endTime = java.time.LocalDateTime.parse(end);
+        }
+        return ResponseEntity.ok(slotService.getAllSlotsByVehicle(vehicleId, startTime, endTime));
+    }
+
     @PutMapping("/{id}/book")
     public ResponseEntity<SlotDto> bookSlot(@PathVariable Long id) {
         logger.info("Received request to book slot with ID: {}", id);

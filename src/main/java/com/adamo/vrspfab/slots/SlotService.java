@@ -31,6 +31,18 @@ public class SlotService {
     private final VehicleService vehicleService;
     private final SecurityUtilsService securityUtilsService; // Inject SecurityUtilsService
     private final VehicleMapper vehicleMapper;
+    
+    @Transactional(readOnly = true)
+    public List<SlotDto> getAllSlotsByVehicle(Long vehicleId, LocalDateTime start, LocalDateTime end) {
+        // Public endpoint to power booking UI: returns all slots for a vehicle, optionally filtered by range
+        List<Slot> slots;
+        if (start != null && end != null) {
+            slots = slotRepository.findByVehicleIdAndStartTimeBetween(vehicleId, start, end);
+        } else {
+            slots = slotRepository.findByVehicle_Id(vehicleId);
+        }
+        return slots.stream().map(slotMapper::toDto).collect(Collectors.toList());
+    }
 
     @Transactional
     public SlotDto createSlot(SlotDto slotDto) {

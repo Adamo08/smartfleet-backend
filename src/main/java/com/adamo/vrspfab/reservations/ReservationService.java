@@ -5,6 +5,7 @@ import com.adamo.vrspfab.common.SecurityUtilsService;
 import com.adamo.vrspfab.notifications.NotificationService;
 import com.adamo.vrspfab.notifications.NotificationType;
 import com.adamo.vrspfab.slots.*;
+import com.adamo.vrspfab.users.Role;
 import com.adamo.vrspfab.users.User;
 import com.adamo.vrspfab.vehicles.VehicleMapper;
 import com.adamo.vrspfab.vehicles.VehicleService;
@@ -140,8 +141,8 @@ public class ReservationService {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new ReservationNotFoundException(id));
 
-        // Security Check: Ensure the user is the owner of the reservation.
-        if (!reservation.getUser().getId().equals(currentUser.getId())) {
+        // Security Check: Ensure the user is the owner of the reservation. (Or an admin)
+        if (!reservation.getUser().getId().equals(currentUser.getId()) || currentUser.getRole() != Role.ADMIN) {
             throw new AccessDeniedException("You do not have permission to view this reservation.");
         }
 

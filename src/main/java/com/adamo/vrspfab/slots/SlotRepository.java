@@ -76,4 +76,17 @@ public interface SlotRepository extends JpaRepository<Slot, Long> {
     @Query("SELECT s FROM Slot s WHERE s.vehicle.id = :vehicleId AND " +
             "((s.startTime < :endTime AND s.endTime > :startTime))")
     List<Slot> findOverlappingSlots(Long vehicleId, LocalDateTime startTime, LocalDateTime endTime);
+
+    /**
+     * Finds all slots (available and unavailable) for a specific vehicle.
+     */
+    @EntityGraph(attributePaths = {"vehicle", "reservation"}, type = EntityGraph.EntityGraphType.LOAD)
+    List<Slot> findByVehicle_Id(Long vehicleId);
+
+    /**
+     * Finds all slots for a specific vehicle within a date range.
+     */
+    @EntityGraph(attributePaths = {"vehicle", "reservation"}, type = EntityGraph.EntityGraphType.LOAD)
+    @Query("SELECT s FROM Slot s WHERE s.vehicle.id = :vehicleId AND s.startTime >= :start AND s.endTime <= :end")
+    List<Slot> findByVehicleIdAndStartTimeBetween(Long vehicleId, LocalDateTime start, LocalDateTime end);
 }
