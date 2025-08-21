@@ -24,46 +24,84 @@ public class NotificationController {
 
     private final NotificationService notificationService;
 
-    @Operation(summary = "Get notifications for the current user", description = "Returns a paginated list of notifications for the authenticated user.")
+    @Operation(summary = "Get notifications for the current user",
+               description = "Returns a paginated list of notifications for the authenticated user.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved notifications"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping
     public Page<NotificationDto> getNotificationsForCurrentUser(Pageable pageable) {
         return notificationService.getNotificationsForCurrentUser(pageable);
     }
 
-    @Operation(summary = "Mark a notification as read", description = "Marks a single notification as read by its ID.")
-    @ApiResponse(responseCode = "200", description = "Notification marked as read successfully")
-    @ApiResponse(responseCode = "404", description = "Notification not found")
+    @Operation(summary = "Mark a notification as read",
+               description = "Marks a single notification as read by its ID.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Notification marked as read successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, user does not own this notification"),
+                       @ApiResponse(responseCode = "404", description = "Notification not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @PatchMapping("/{id}/read")
     public ResponseEntity<NotificationDto> markNotificationAsRead(@PathVariable Long id) {
         return ResponseEntity.ok(notificationService.markNotificationAsRead(id));
     }
 
-    @Operation(summary = "Mark all notifications as read", description = "Marks all unread notifications for the current user as read.")
+    @Operation(summary = "Mark all notifications as read",
+               description = "Marks all unread notifications for the current user as read.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "All notifications marked as read successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @PostMapping("/mark-all-as-read")
     public ResponseEntity<Map<String, String>> markAllNotificationsAsRead() {
         long count = notificationService.markAllNotificationsAsRead();
         return ResponseEntity.ok(Map.of("message", "Successfully marked " + count + " notifications as read."));
     }
 
-    @Operation(summary = "Delete a notification", description = "Deletes a single notification by its ID.")
-    @ApiResponse(responseCode = "204", description = "Notification deleted successfully")
-    @ApiResponse(responseCode = "404", description = "Notification not found")
+    @Operation(summary = "Delete a notification",
+               description = "Deletes a single notification by its ID.",
+               responses = {
+                       @ApiResponse(responseCode = "204", description = "Notification deleted successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, user does not own this notification"),
+                       @ApiResponse(responseCode = "404", description = "Notification not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteNotification(@PathVariable Long id) {
         notificationService.deleteNotification(id);
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "[ADMIN] Broadcast a notification",
+               description = "Sends a notification to all users in the system. Requires ADMIN role.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Broadcast initiated successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid notification request"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges (requires ADMIN role)"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @PostMapping("/broadcast")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "[ADMIN] Broadcast a notification", description = "Sends a notification to all users in the system.")
     public ResponseEntity<Map<String, String>> broadcastNotification(@Valid @RequestBody AdminNotificationRequest request) {
         notificationService.broadcastNotification(request);
         return ResponseEntity.ok(Map.of("message", "Broadcast initiated successfully."));
     }
 
+    @Operation(summary = "Test real-time notification",
+               description = "Sends a test notification to the current user for testing WebSocket functionality.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Test notification sent successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @PostMapping("/test")
-    @Operation(summary = "Test real-time notification", description = "Sends a test notification to the current user for testing WebSocket functionality.")
     public ResponseEntity<Map<String, String>> testRealTimeNotification() {
         notificationService.createAndDispatchNotification(
             notificationService.getCurrentUser(),

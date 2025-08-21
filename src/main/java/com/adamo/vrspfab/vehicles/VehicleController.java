@@ -3,6 +3,9 @@ package com.adamo.vrspfab.vehicles;
 import com.adamo.vrspfab.reservations.Reservation;
 import com.adamo.vrspfab.reservations.ReservationDto;
 import com.adamo.vrspfab.reservations.ReservationInfoForVehicleDto;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,10 +24,18 @@ import java.util.Optional;
 @AllArgsConstructor
 @RestController
 @RequestMapping("/vehicles")
+@Tag(name = "Vehicle Management", description = "APIs for managing vehicles")
 public class VehicleController {
 
     private final VehicleService vehicleService;
 
+    @Operation(summary = "Create a new vehicle",
+               description = "Adds a new vehicle to the system.",
+               responses = {
+                       @ApiResponse(responseCode = "201", description = "Vehicle created successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid vehicle data"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public VehicleDto createVehicle(@Valid @RequestBody VehicleDto vehicleDto) {
@@ -36,6 +47,13 @@ public class VehicleController {
         return vehicleService.createVehicle(vehicleDto);
     }
 
+    @Operation(summary = "Create multiple vehicles in bulk",
+               description = "Adds multiple vehicles to the system in a single request.",
+               responses = {
+                       @ApiResponse(responseCode = "201", description = "Vehicles created successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid vehicle data in bulk request"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @PostMapping("/bulk")
     @ResponseStatus(HttpStatus.CREATED)
     public List<VehicleDto> createVehiclesBulk(@Valid @RequestBody List<VehicleDto> vehicleDtos) {
@@ -49,12 +67,25 @@ public class VehicleController {
         return vehicleService.createVehiclesBulk(vehicleDtos);
     }
 
+    @Operation(summary = "Get vehicle by ID",
+               description = "Retrieves a single vehicle by its ID.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved vehicle"),
+                       @ApiResponse(responseCode = "404", description = "Vehicle not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/{id}")
     public ResponseEntity<VehicleDto> getVehicleById(@PathVariable Long id) {
         log.info("Received request to get vehicle with ID: {}", id);
         return ResponseEntity.ok(vehicleService.getVehicleById(id));
     }
 
+    @Operation(summary = "Get all vehicles with pagination and sorting",
+               description = "Retrieves a paginated list of all vehicles.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved vehicles"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping
     public ResponseEntity<Page<VehicleDto>> getAllVehicles(
             @RequestParam(defaultValue = "0") int page,
@@ -68,6 +99,13 @@ public class VehicleController {
         return ResponseEntity.ok(vehicles);
     }
 
+    @Operation(summary = "Search vehicles with filters",
+               description = "Searches for vehicles based on various criteria such as status, type, brand, model, and price range.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved matching vehicles"),
+                       @ApiResponse(responseCode = "400", description = "Invalid search parameters"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/search")
     public ResponseEntity<Page<VehicleDto>> searchVehicles(
             @RequestParam(defaultValue = "0") int page,
@@ -93,6 +131,13 @@ public class VehicleController {
         return ResponseEntity.ok(vehicles);
     }
 
+    @Operation(summary = "Get vehicles by year range",
+               description = "Retrieves a paginated list of vehicles manufactured within a specified year range.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved vehicles by year range"),
+                       @ApiResponse(responseCode = "400", description = "Invalid year range"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/year/{startYear}/{endYear}")
     public ResponseEntity<Page<VehicleDto>> getVehiclesByYearRange(
             @RequestParam(defaultValue = "0") int page,
@@ -107,6 +152,13 @@ public class VehicleController {
         return ResponseEntity.ok(vehicles);
     }
 
+    @Operation(summary = "Get vehicles by mileage range",
+               description = "Retrieves a paginated list of vehicles within a specified mileage range.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved vehicles by mileage range"),
+                       @ApiResponse(responseCode = "400", description = "Invalid mileage range"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/mileage/{minMileage}/{maxMileage}")
     public ResponseEntity<Page<VehicleDto>> getVehiclesByMileageRange(
             @RequestParam(defaultValue = "0") int page,
@@ -121,6 +173,13 @@ public class VehicleController {
         return ResponseEntity.ok(vehicles);
     }
 
+    @Operation(summary = "Check vehicle availability",
+               description = "Checks if a specific vehicle is available for a given date range.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved availability status"),
+                       @ApiResponse(responseCode = "404", description = "Vehicle not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/{id}/availability")
     public ResponseEntity<Boolean> checkVehicleAvailability(
             @PathVariable Long id,
@@ -133,6 +192,13 @@ public class VehicleController {
     }
 
 
+    @Operation(summary = "Get vehicle reservations",
+               description = "Retrieves a paginated list of reservations for a specific vehicle.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved vehicle reservations"),
+                       @ApiResponse(responseCode = "404", description = "Vehicle not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/{id}/reservations")
     public ResponseEntity<Page<ReservationInfoForVehicleDto>> getVehicleReservations(
             @PathVariable Long id,
@@ -148,6 +214,14 @@ public class VehicleController {
     }
 
 
+    @Operation(summary = "Update vehicle details",
+               description = "Updates the details of an existing vehicle.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Vehicle updated successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid vehicle data"),
+                       @ApiResponse(responseCode = "404", description = "Vehicle not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @PutMapping("/{id}")
     public ResponseEntity<VehicleDto> updateVehicle(@PathVariable Long id, @Valid @RequestBody VehicleDto vehicleDto) {
         log.info("Received request to update vehicle with ID: {}", id);
@@ -159,6 +233,14 @@ public class VehicleController {
         return ResponseEntity.ok(updatedVehicle);
     }
 
+    @Operation(summary = "Update vehicle status",
+               description = "Updates the status of a specific vehicle.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Vehicle status updated successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid status provided"),
+                       @ApiResponse(responseCode = "404", description = "Vehicle not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @PatchMapping("/{id}/status")
     public ResponseEntity<VehicleDto> updateVehicleStatus(
             @PathVariable Long id,
@@ -169,6 +251,14 @@ public class VehicleController {
         return ResponseEntity.ok(updatedVehicle);
     }
 
+    @Operation(summary = "Update vehicle mileage",
+               description = "Updates the mileage of a specific vehicle.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Vehicle mileage updated successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid mileage provided"),
+                       @ApiResponse(responseCode = "404", description = "Vehicle not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @PatchMapping("/{id}/mileage")
     public ResponseEntity<VehicleDto> updateVehicleMileage(
             @PathVariable Long id,
@@ -184,6 +274,13 @@ public class VehicleController {
         return ResponseEntity.ok(updatedVehicle);
     }
 
+    @Operation(summary = "Delete a vehicle",
+               description = "Deletes a vehicle by its ID.",
+               responses = {
+                       @ApiResponse(responseCode = "204", description = "Vehicle deleted successfully"),
+                       @ApiResponse(responseCode = "404", description = "Vehicle not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteVehicle(@PathVariable Long id) {

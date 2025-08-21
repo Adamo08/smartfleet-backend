@@ -1,5 +1,8 @@
 package com.adamo.vrspfab.payments;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -18,6 +21,7 @@ import java.util.List;
 @RequestMapping("/admin/payments")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
+@Tag(name = "Admin Payment Management", description = "APIs for administrators to manage all payments and refunds")
 public class AdminPaymentController {
 
     private final AdminPaymentService adminPaymentService;
@@ -28,6 +32,14 @@ public class AdminPaymentController {
      * @param pageable Pagination information.
      * @return A page of Payment entities.
      */
+    @Operation(summary = "Get all payments (Admin only)",
+               description = "Retrieves a paginated list of all payments in the system. Requires ADMIN role.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved payments"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges (requires ADMIN role)"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping
     public ResponseEntity<Page<PaymentDetailsDto>> getAllPayments(Pageable pageable) {
         return ResponseEntity.ok(adminPaymentService.findAllPayments(pageable));
@@ -38,6 +50,15 @@ public class AdminPaymentController {
      * @param paymentId The ID of the payment.
      * @return The full Payment entity.
      */
+    @Operation(summary = "Get payment details by ID (Admin only)",
+               description = "Retrieves the full details of a specific payment by its ID. Requires ADMIN role.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Payment details retrieved successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges (requires ADMIN role)"),
+                       @ApiResponse(responseCode = "404", description = "Payment not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/{paymentId}")
     public ResponseEntity<PaymentDetailsDto> getPaymentById(@PathVariable Long paymentId) {
         return ResponseEntity.ok(adminPaymentService.findPaymentById(paymentId));
@@ -49,6 +70,16 @@ public class AdminPaymentController {
      * @param requestDto The refund request details.
      * @return The response from the refund processing.
      */
+    @Operation(summary = "Process a manual refund (Admin only)",
+               description = "Initiates a manual refund for a payment. Requires ADMIN role.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Refund processed successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid refund request or payment not eligible for refund"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges (requires ADMIN role)"),
+                       @ApiResponse(responseCode = "404", description = "Payment not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @PostMapping("/refund")
     public ResponseEntity<RefundResponseDto> manualRefund(@Valid @RequestBody RefundRequestDto requestDto) {
         // This endpoint reuses the existing RefundService but is secured for admins.
@@ -60,6 +91,15 @@ public class AdminPaymentController {
      * @param paymentId The ID of the payment.
      * @return A list of Refund entities.
      */
+    @Operation(summary = "Get refunds for a payment (Admin only)",
+               description = "Retrieves a list of all refunds associated with a specific payment. Requires ADMIN role.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Refunds retrieved successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges (requires ADMIN role)"),
+                       @ApiResponse(responseCode = "404", description = "Payment not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/{paymentId}/refunds")
     public ResponseEntity<List<RefundDetailsDto>> getRefundsForPayment(@PathVariable Long paymentId) {
         return ResponseEntity.ok(adminPaymentService.findRefundsByPaymentId(paymentId));

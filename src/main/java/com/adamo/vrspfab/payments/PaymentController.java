@@ -1,5 +1,8 @@
 package com.adamo.vrspfab.payments;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -12,17 +15,34 @@ import java.time.format.DateTimeFormatter;
 @RestController
 @RequestMapping("/payments")
 @RequiredArgsConstructor
+@Tag(name = "Payment Management", description = "APIs for processing payments and managing payment-related operations")
 public class PaymentController {
 
     private final PaymentService paymentService;
     private final RefundService refundService;
     private final PaymentAnalyticsService analyticsService;
 
+    @Operation(summary = "Create a payment session",
+               description = "Initiates a payment session for a reservation, typically for external payment gateways.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Payment session created successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid session request"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @PostMapping("/session")
     public ResponseEntity<SessionResponseDto> createPaymentSession(@Valid @RequestBody SessionRequestDto requestDto) {
         return ResponseEntity.ok(paymentService.createPaymentSession(requestDto));
     }
     
+    @Operation(summary = "Process a payment",
+               description = "Processes a payment with an optional idempotency key to prevent duplicate transactions.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Payment processed successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid payment request"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @PostMapping("/process")
     public ResponseEntity<PaymentResponseDto> processPayment(
             @Valid @RequestBody PaymentRequestDto requestDto,
@@ -31,52 +51,133 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.processPayment(requestDto, idempotencyKey));
     }
 
+    @Operation(summary = "Confirm a payment",
+               description = "Confirms a payment using a session ID, typically after an external payment gateway redirect.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Payment confirmed successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid session ID or payment already confirmed"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "404", description = "Session not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @PostMapping("/confirm/{sessionId}")
     public ResponseEntity<PaymentResponseDto> confirmPayment(@PathVariable String sessionId) {
         return ResponseEntity.ok(paymentService.confirmPayment(sessionId));
     }
 
+    @Operation(summary = "Get payment status",
+               description = "Retrieves the status of a payment by its ID.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Payment status retrieved successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "404", description = "Payment not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/{paymentId}/status")
     public ResponseEntity<PaymentResponseDto> getPaymentStatus(@PathVariable Long paymentId) {
         return ResponseEntity.ok(paymentService.getPaymentStatus(paymentId));
     }
 
+    @Operation(summary = "Get payment by ID",
+               description = "Retrieves detailed information about a payment by its ID.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Payment details retrieved successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "404", description = "Payment not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/{paymentId}")
     public ResponseEntity<PaymentDto> getPaymentById(@PathVariable Long paymentId) {
         return ResponseEntity.ok(paymentService.getPaymentById(paymentId));
     }
 
+    @Operation(summary = "Get payment by reservation ID",
+               description = "Retrieves payment information associated with a specific reservation ID.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Payment retrieved successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "404", description = "Payment for reservation not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/reservation/{reservationId}")
     public ResponseEntity<PaymentDto> getPaymentByReservationId(@PathVariable Long reservationId) {
         return ResponseEntity.ok(paymentService.getPaymentByReservationId(reservationId));
     }
 
+    @Operation(summary = "Get user payment history",
+               description = "Retrieves a paginated list of payment transactions for the authenticated user.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Payment history retrieved successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/history")
     public ResponseEntity<Page<PaymentDto>> getUserPaymentHistory(Pageable pageable) {
         return ResponseEntity.ok(paymentService.getUserPaymentHistory(pageable));
     }
 
+    @Operation(summary = "Cancel a payment",
+               description = "Cancels a payment by its ID. This might initiate a refund if the payment was already captured.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Payment cancelled successfully"),
+                       @ApiResponse(responseCode = "400", description = "Cannot cancel payment (e.g., already refunded)"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "404", description = "Payment not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @PostMapping("/{paymentId}/cancel")
     public ResponseEntity<Void> cancelPayment(@PathVariable Long paymentId) {
         paymentService.cancelPayment(paymentId);
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Process a refund",
+               description = "Initiates a refund for a given payment.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Refund processed successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid refund request or payment not eligible for refund"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "404", description = "Payment not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @PostMapping("/refund")
     public ResponseEntity<RefundResponseDto> processRefund(@Valid @RequestBody RefundRequestDto requestDto) {
         return ResponseEntity.ok(refundService.processRefund(requestDto));
     }
 
+    @Operation(summary = "Get refund details",
+               description = "Retrieves detailed information about a specific refund by its ID.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Refund details retrieved successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "404", description = "Refund not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/refund/{refundId}")
     public ResponseEntity<RefundDetailsDto> getRefundDetails(@PathVariable Long refundId) {
         return ResponseEntity.ok(refundService.getRefundDetails(refundId));
     }
 
+    @Operation(summary = "Get refund history",
+               description = "Retrieves a paginated list of all refunds.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Refund history retrieved successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/refunds")
     public ResponseEntity<Page<RefundDetailsDto>> getRefundHistory(Pageable pageable) {
         return ResponseEntity.ok(refundService.getRefundHistory(pageable));
     }
 
+    @Operation(summary = "Get payment analytics",
+               description = "Retrieves payment analytics and statistics for a given date range. If no dates are provided, defaults to the last 30 days.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Analytics report retrieved successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid date format"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/analytics")
     public ResponseEntity<AnalyticsReportDto> getAnalytics(
             @RequestParam (required = false) String startDate,
@@ -94,16 +195,39 @@ public class PaymentController {
         return ResponseEntity.ok(analyticsService.getPaymentAnalytics(start, end));
     }
 
+    @Operation(summary = "Get payment statistics",
+               description = "Retrieves general payment statistics, such as total revenue, successful transactions, etc.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Payment statistics retrieved successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/stats")
     public ResponseEntity<PaymentStatsDto> getPaymentStats() {
         return ResponseEntity.ok(paymentService.getPaymentStats());
     }
 
+    @Operation(summary = "Get available payment methods",
+               description = "Retrieves a list of available payment methods configured in the system.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Payment methods retrieved successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/methods")
     public ResponseEntity<PaymentMethodsDto> getPaymentMethods() {
         return ResponseEntity.ok(paymentService.getPaymentMethods());
     }
 
+    @Operation(summary = "Validate a payment method",
+               description = "Validates the details of a specific payment method.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Payment method validated successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid payment method details"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "404", description = "Payment method not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/methods/{methodId}/validate")
     public ResponseEntity<PaymentMethodValidationDto> validatePaymentMethod(@PathVariable String methodId) {
         return ResponseEntity.ok(paymentService.validatePaymentMethod(methodId));
