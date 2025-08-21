@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -118,48 +119,14 @@ public class VehicleService {
     @Transactional(readOnly = true)
     @Cacheable(value = "vehicles", key = "#page + '-' + #size + '-' + #sortBy + '-' + #sortDirection")
     public Page<VehicleDto> getAllVehicles(
-            int page, int size, String sortBy, String sortDirection
+            int page, int size, String sortBy, String sortDirection, String brand, String model, String vehicleType, String fuelType, String status, Double minPrice, Double maxPrice
     ) {
         log.debug("Fetching all vehicles: page={}, size={}, sortBy={}, sortDirection={}",
                 page, size, sortBy, sortDirection);
         Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
-        Page<Vehicle> vehicles = vehicleRepository.findAll(pageable);
-        return vehicles.map(vehicleMapper::toDto);
-    }
-
-    /**
-     * Searches for vehicles based on multiple optional criteria.
-     *
-     * @param page The page number (0-indexed).
-     * @param size The number of items per page.
-     * @param sortBy The field to sort by.
-     * @param sortDirection The sort direction (ASC or DESC).
-     * @param status Optional filter for vehicle status.
-     * @param type Optional filter for vehicle type.
-     * @param brand Optional filter for brand name.
-     * @param model Optional filter for model name.
-     * @param minPrice Optional minimum price filter.
-     * @param maxPrice Optional maximum price filter.
-     * @return A page of matching Vehicle DTOs.
-     */
-    @Transactional(readOnly = true)
-    @Cacheable(value = "vehicles", key = "#page + '-' + #size + '-' + #sortBy + '-' + #sortDirection + '-' + #status.orElse(null) + '-' + #type.orElse(null) + '-' + #brand.orElse(null) + '-' + #model.orElse(null) + '-' + #minPrice.orElse(null) + '-' + #maxPrice.orElse(null)")
-    public Page<VehicleDto> searchVehicles(
-            int page, int size, String sortBy, String sortDirection,
-            Optional<VehicleStatus> status, Optional<VehicleType> type,
-            Optional<String> brand, Optional<String> model,
-            Optional<Double> minPrice, Optional<Double> maxPrice
-    ) {
-        log.debug("Searching vehicles: page={}, size={}, sortBy={}, sortDirection={}, status={}, type={}, brand={}, model={}, minPrice={}, maxPrice={}",
-                page, size, sortBy, sortDirection, status, type, brand, model, minPrice, maxPrice);
-        Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
-        Pageable pageable = PageRequest.of(page, size, sort);
-        Page<Vehicle> vehicles = vehicleRepository.searchVehicles(
-                status.orElse(null), type.orElse(null),
-                brand.orElse(null), model.orElse(null),
-                minPrice.orElse(null), maxPrice.orElse(null), pageable
-        );
+        VehicleSpecification spec = new VehicleSpecification(brand, model, vehicleType, fuelType, status, minPrice, maxPrice);
+        Page<Vehicle> vehicles = vehicleRepository.findAll(spec, pageable);
         return vehicles.map(vehicleMapper::toDto);
     }
 

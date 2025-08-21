@@ -37,12 +37,22 @@ public class SecurityUtilsService {
             throw new AccessDeniedException("User not authenticated.");
         }
 
+        // The principal can be a String (user ID from JWT) or a UserDetails object
+        Object principal = authentication.getPrincipal();
         Long userId;
-        try {
-            userId = (Long) authentication.getPrincipal();
-        } catch (ClassCastException e) {
-            logger.error("Authentication principal is not a Long ID: {}. Type: {}", authentication.getPrincipal(), authentication.getPrincipal().getClass().getName(), e);
-            throw new AccessDeniedException("Invalid authentication principal type. Expected Long ID.");
+
+        if (principal instanceof String) {
+            try {
+                userId = Long.parseLong((String) principal);
+            } catch (NumberFormatException e) {
+                logger.error("Authentication principal is a String but not a valid Long ID: {}. Error: {}", principal, e.getMessage(), e);
+                throw new AccessDeniedException("Invalid authentication principal format. Expected a numeric user ID.");
+            }
+        } else if (principal instanceof Long) {
+            userId = (Long) principal;
+        } else {
+            logger.error("Authentication principal is of unexpected type: {}. Type: {}", principal, principal.getClass().getName());
+            throw new AccessDeniedException("Unexpected authentication principal type.");
         }
 
         return userService.getUserById(userId)

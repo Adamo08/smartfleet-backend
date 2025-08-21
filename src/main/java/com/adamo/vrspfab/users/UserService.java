@@ -5,6 +5,8 @@ import com.adamo.vrspfab.common.DuplicateFieldException;
 import com.adamo.vrspfab.common.SecurityUtilsService;
 import com.adamo.vrspfab.notifications.EmailService;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,14 +24,10 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
 
-    public Iterable<UserDto> getAllUsers(String sortBy) {
-        if (!Set.of("firstName", "email").contains(sortBy))
-            sortBy = "firstName";
-
-        return userRepository.findAll(Sort.by(sortBy))
-                .stream()
-                .map(userMapper::toDto)
-                .toList();
+    public Page<UserDto> getAllUsers(PageRequest pageable, String searchTerm, String role) {
+        UserSpecification spec = new UserSpecification(searchTerm, role);
+        return userRepository.findAll(spec, pageable)
+                .map(userMapper::toDto);
     }
 
     public UserDto getUser(Long userId) {

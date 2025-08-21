@@ -5,6 +5,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -22,16 +25,23 @@ public class UserController {
     private final UserService userService;
 
     @Operation(summary = "Get all users",
-               description = "Retrieves a list of all users, with optional sorting.",
+               description = "Retrieves a paginated and filtered list of all users.",
                responses = {
                        @ApiResponse(responseCode = "200", description = "Successfully retrieved list of users"),
                        @ApiResponse(responseCode = "500", description = "Internal server error")
                })
     @GetMapping
-    public Iterable<UserDto> getAllUsers(
-            @RequestParam(required = false, defaultValue = "", name = "sort") String sortBy
+    public Page<UserDto> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "ASC") String sortDirection,
+            @RequestParam(required = false) String searchTerm,
+            @RequestParam(required = false) String role
     ) {
-        return userService.getAllUsers(sortBy);
+        Sort.Direction direction = sortDirection.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        return userService.getAllUsers(pageable, searchTerm, role);
     }
 
     @Operation(summary = "Get user by ID",

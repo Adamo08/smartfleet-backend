@@ -11,9 +11,12 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.owasp.encoder.Encode;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -80,55 +83,29 @@ public class VehicleController {
         return ResponseEntity.ok(vehicleService.getVehicleById(id));
     }
 
-    @Operation(summary = "Get all vehicles with pagination and sorting",
-               description = "Retrieves a paginated list of all vehicles.",
+    @Operation(summary = "Get all vehicles",
+               description = "Retrieves a paginated and filtered list of all vehicles.",
                responses = {
-                       @ApiResponse(responseCode = "200", description = "Successfully retrieved vehicles"),
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved list of vehicles"),
                        @ApiResponse(responseCode = "500", description = "Internal server error")
                })
     @GetMapping
-    public ResponseEntity<Page<VehicleDto>> getAllVehicles(
+    public Page<VehicleDto> getAllVehicles(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "DESC") String sortDirection
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "ASC") String sortDirection,
+            @RequestParam(required = false) String brand,
+            @RequestParam(required = false) String model,
+            @RequestParam(required = false) String vehicleType,
+            @RequestParam(required = false) String fuelType,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice
     ) {
-        log.info("Received request to get all vehicles: page={}, size={}, sortBy={}, sortDirection={}",
-                page, size, sortBy, sortDirection);
-        Page<VehicleDto> vehicles = vehicleService.getAllVehicles(page, size, sortBy, sortDirection);
-        return ResponseEntity.ok(vehicles);
-    }
-
-    @Operation(summary = "Search vehicles with filters",
-               description = "Searches for vehicles based on various criteria such as status, type, brand, model, and price range.",
-               responses = {
-                       @ApiResponse(responseCode = "200", description = "Successfully retrieved matching vehicles"),
-                       @ApiResponse(responseCode = "400", description = "Invalid search parameters"),
-                       @ApiResponse(responseCode = "500", description = "Internal server error")
-               })
-    @GetMapping("/search")
-    public ResponseEntity<Page<VehicleDto>> searchVehicles(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "DESC") String sortDirection,
-            @RequestParam(required = false) Optional<VehicleStatus> status,
-            @RequestParam(required = false) Optional<VehicleType> type,
-            @RequestParam(required = false) Optional<String> brand,
-            @RequestParam(required = false) Optional<String> model,
-            @RequestParam(required = false) Optional<Double> minPrice,
-            @RequestParam(required = false) Optional<Double> maxPrice
-    ) {
-        log.info("Received request to search vehicles: status={}, type={}, brand={}, model={}, minPrice={}, maxPrice={}",
-                status, type, brand, model, minPrice, maxPrice);
-        Page<VehicleDto> vehicles = vehicleService.searchVehicles(
-                page, size, sortBy, sortDirection,
-                status, type,
-                brand.map(Encode::forHtml),
-                model.map(Encode::forHtml),
-                minPrice, maxPrice
-        );
-        return ResponseEntity.ok(vehicles);
+        Sort.Direction direction = sortDirection.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        return vehicleService.getAllVehicles(page, size, sortBy, sortDirection, brand, model, vehicleType, fuelType, status, minPrice, maxPrice);
     }
 
     @Operation(summary = "Get vehicles by year range",
