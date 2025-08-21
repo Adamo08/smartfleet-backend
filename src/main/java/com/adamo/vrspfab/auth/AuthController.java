@@ -165,4 +165,24 @@ public class AuthController {
         var accessToken = authService.refreshAccessToken(refreshToken);
         return new JwtResponse(accessToken.toString());
     }
+
+
+    /**
+     * This method handles BadCredentialsException thrown during authentication.
+     *
+     * @return ResponseEntity with status 401 (Unauthorized).
+     */
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorDto> handleBadCredentialsException() {
+        return new ResponseEntity<>(
+                new ErrorDto(
+                        LocalDateTime.now(),
+                        HttpStatus.UNAUTHORIZED.value(),
+                        "Unauthorized",
+                        "Invalid credentials",
+                        "/auth/login"
+                ),
+                HttpStatus.UNAUTHORIZED
+        );
+    }
 }
