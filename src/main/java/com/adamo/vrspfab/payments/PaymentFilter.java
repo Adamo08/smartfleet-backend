@@ -1,6 +1,5 @@
 package com.adamo.vrspfab.payments;
 
-import com.adamo.vrspfab.common.PaymentStatus;
 import lombok.Builder;
 import lombok.Data;
 import java.math.BigDecimal;

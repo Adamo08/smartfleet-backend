@@ -6,7 +6,6 @@ import com.adamo.vrspfab.reservations.ReservationNotFoundException;
 import com.adamo.vrspfab.reservations.ReservationRepository;
 import com.adamo.vrspfab.users.Role;
 import com.adamo.vrspfab.users.User;
-import com.adamo.vrspfab.payments.PaymentFilter;
 import com.github.benmanes.caffeine.cache.Cache;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

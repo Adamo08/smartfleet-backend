@@ -1,7 +1,6 @@
 package com.adamo.vrspfab.reservations;
 
 
-import com.adamo.vrspfab.slots.SlotDto;
 import com.adamo.vrspfab.users.UserSummaryDto;
 import com.adamo.vrspfab.vehicles.VehicleSummaryDto;
 import lombok.Data;

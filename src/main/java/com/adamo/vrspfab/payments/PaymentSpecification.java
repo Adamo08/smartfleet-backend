@@ -3,6 +3,7 @@ package com.adamo.vrspfab.payments;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,12 +13,12 @@ public class PaymentSpecification implements Specification<Payment> {
     private final Long userId;
     private final Long reservationId;
     private final PaymentStatus status;
-    private final Double minAmount;
-    private final Double maxAmount;
+    private final BigDecimal minAmount;
+    private final BigDecimal maxAmount;
     private final LocalDateTime startDate;
     private final LocalDateTime endDate;
 
-    public PaymentSpecification(Long userId, Long reservationId, PaymentStatus status, Double minAmount, Double maxAmount, LocalDateTime startDate, LocalDateTime endDate) {
+    public PaymentSpecification(Long userId, Long reservationId, PaymentStatus status, BigDecimal minAmount, BigDecimal maxAmount, LocalDateTime startDate, LocalDateTime endDate) {
         this.userId = userId;
         this.reservationId = reservationId;
         this.status = status;
