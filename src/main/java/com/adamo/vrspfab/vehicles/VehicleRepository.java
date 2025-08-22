@@ -53,4 +53,12 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long>, JpaSpec
 
 
     boolean existsByLicensePlate(String licensePlate);
+
+    /**
+     * Counts the number of vehicles with a specific status.
+     *
+     * @param status the status to count vehicles by
+     * @return the number of vehicles with the given status
+     */
+    Long countByStatus(VehicleStatus status);
 }

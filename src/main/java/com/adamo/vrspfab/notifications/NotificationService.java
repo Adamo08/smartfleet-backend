@@ -278,4 +278,10 @@ public class NotificationService {
     public User getCurrentUser() {
         return securityUtilsService.getCurrentAuthenticatedUser();
     }
+
+    @Transactional(readOnly = true)
+    public Page<NotificationDto> getAllNotificationsAdmin(NotificationFilter filter, Pageable pageable) {
+        NotificationSpecification spec = new NotificationSpecification(filter);
+        return notificationRepository.findAll(spec, pageable).map(notificationMapper::toDto);
+    }
 }

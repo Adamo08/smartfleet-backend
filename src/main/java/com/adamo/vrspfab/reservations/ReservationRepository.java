@@ -68,4 +68,12 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long>,
      */
     @EntityGraph(attributePaths = {"user", "vehicle", "slot"}, type = EntityGraph.EntityGraphType.LOAD)
     List<Reservation> findAllByStatusAndEndDateBefore(ReservationStatus status, LocalDateTime now);
+
+    /**
+     * Counts the number of reservations with a specific status.
+     *
+     * @param status the status to count reservations by
+     * @return the number of reservations with the given status
+     */
+    Long countByStatus(ReservationStatus status);
 }

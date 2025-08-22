@@ -52,4 +52,12 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
      * @return true if a user with the given phone number exists and is not the specified user, false otherwise
      */
     boolean existsByPhoneNumberAndIdNot(String phoneNumber, Long userId);
+
+    /**
+     * Counts the number of users with a specific role.
+     *
+     * @param role the role to count users by
+     * @return the number of users with the given role
+     */
+    Long countByRole(Role role);
 }

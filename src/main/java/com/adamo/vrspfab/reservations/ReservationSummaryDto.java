@@ -2,6 +2,7 @@ package com.adamo.vrspfab.reservations;
 
 
 import com.adamo.vrspfab.slots.SlotDto;
+import com.adamo.vrspfab.users.UserSummaryDto;
 import com.adamo.vrspfab.vehicles.VehicleSummaryDto;
 import lombok.Data;
 
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 @Data
 public class ReservationSummaryDto {
     private Long id;
+    private UserSummaryDto user;
     private VehicleSummaryDto vehicle;
     private LocalDateTime startDate;
     private LocalDateTime endDate;

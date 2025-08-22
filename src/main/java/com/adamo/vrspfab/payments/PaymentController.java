@@ -232,4 +232,54 @@ public class PaymentController {
     public ResponseEntity<PaymentMethodValidationDto> validatePaymentMethod(@PathVariable String methodId) {
         return ResponseEntity.ok(paymentService.validatePaymentMethod(methodId));
     }
+
+    @Operation(summary = "Get all payments (Admin only)",
+            description = "Retrieves a paginated and filtered list of all payments in the system. Requires admin privileges.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Successfully retrieved payments"),
+                    @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                    @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges"),
+                    @ApiResponse(responseCode = "500", description = "Internal server error")
+            })
+    @GetMapping("/admin")
+    public ResponseEntity<Page<PaymentDto>> getAllPaymentsAdmin(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDirection,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) Long reservationId,
+            @RequestParam(required = false) PaymentStatus status,
+            @RequestParam(required = false) Double minAmount,
+            @RequestParam(required = false) Double maxAmount,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate
+    ) {
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.fromString(sortDirection), sortBy));
+        PaymentFilter filter = PaymentFilter.builder()
+                .userId(userId)
+                .reservationId(reservationId)
+                .status(status)
+                .minAmount(minAmount)
+                .maxAmount(maxAmount)
+                .startDate(startDate)
+                .endDate(endDate)
+                .build();
+        return ResponseEntity.ok(paymentService.getAllPaymentsAdmin(filter, pageable));
+    }
+
+    @Operation(summary = "Delete a payment (Admin only)",
+            description = "Deletes a payment from the system. Requires admin privileges.",
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "Payment deleted successfully"),
+                    @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                    @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges"),
+                    @ApiResponse(responseCode = "404", description = "Payment not found"),
+                    @ApiResponse(responseCode = "500", description = "Internal server error")
+            })
+    @DeleteMapping("/admin/{paymentId}")
+    public ResponseEntity<Void> deletePaymentAdmin(@PathVariable Long paymentId) {
+        paymentService.deletePayment(paymentId);
+        return ResponseEntity.noContent().build();
+    }
 }

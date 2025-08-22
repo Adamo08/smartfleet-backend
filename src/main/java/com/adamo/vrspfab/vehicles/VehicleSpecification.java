@@ -37,13 +37,28 @@ public class VehicleSpecification implements Specification<Vehicle> {
             predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("model")), "%" + model.toLowerCase() + "%"));
         }
         if (vehicleType != null && !vehicleType.trim().isEmpty()) {
-            predicates.add(criteriaBuilder.equal(root.get("vehicleType"), VehicleType.valueOf(vehicleType.toUpperCase())));
+            try {
+                predicates.add(criteriaBuilder.equal(root.get("vehicleType"), VehicleType.valueOf(vehicleType.toUpperCase())));
+            } catch (IllegalArgumentException e) {
+                // Log the error or handle it as appropriate, for now, we'll just ignore the filter
+                // log.warn("Invalid vehicleType received: {}", vehicleType);
+            }
         }
         if (fuelType != null && !fuelType.trim().isEmpty()) {
-            predicates.add(criteriaBuilder.equal(root.get("fuelType"), FuelType.valueOf(fuelType.toUpperCase())));
+            try {
+                predicates.add(criteriaBuilder.equal(root.get("fuelType"), FuelType.valueOf(fuelType.toUpperCase())));
+            } catch (IllegalArgumentException e) {
+                // Log the error or handle it as appropriate, for now, we'll just ignore the filter
+                // log.warn("Invalid fuelType received: {}", fuelType);
+            }
         }
         if (status != null && !status.trim().isEmpty()) {
-            predicates.add(criteriaBuilder.equal(root.get("status"), VehicleStatus.valueOf(status.toUpperCase())));
+            try {
+                predicates.add(criteriaBuilder.equal(root.get("status"), VehicleStatus.valueOf(status.toUpperCase())));
+            } catch (IllegalArgumentException e) {
+                // Log the error or handle it as appropriate, for now, we'll just ignore the filter
+                // log.warn("Invalid status received: {}", status);
+            }
         }
         if (minPrice != null) {
             predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("pricePerDay"), minPrice));

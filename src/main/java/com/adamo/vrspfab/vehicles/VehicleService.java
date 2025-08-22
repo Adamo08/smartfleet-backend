@@ -130,6 +130,10 @@ public class VehicleService {
         return vehicles.map(vehicleMapper::toDto);
     }
 
+    public Long countActiveVehicles() {
+        return vehicleRepository.countByStatus(VehicleStatus.AVAILABLE);
+    }
+
     /**
      * Retrieves vehicles within a specified year range.
      *

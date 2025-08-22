@@ -95,8 +95,13 @@ public class ReservationService {
         return reservationMapper.toDetailedDto(savedReservation);
     }
 
+    public Long countAllReservations() {
+        return reservationRepository.count();
+    }
 
-
+    public Long countReservationsByStatus(String status) {
+        return reservationRepository.countByStatus(ReservationStatus.valueOf(status.toUpperCase()));
+    }
 
     /**
      * Retrieves a reservation by its ID, including user and vehicle details.

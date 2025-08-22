@@ -6,6 +6,7 @@ import com.adamo.vrspfab.reservations.ReservationNotFoundException;
 import com.adamo.vrspfab.reservations.ReservationRepository;
 import com.adamo.vrspfab.users.Role;
 import com.adamo.vrspfab.users.User;
+import com.adamo.vrspfab.payments.PaymentFilter;
 import com.github.benmanes.caffeine.cache.Cache;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -163,6 +164,21 @@ public class PaymentService {
         return payments.map(paymentMapper::toPaymentDto);
     }
 
+    @Transactional(readOnly = true)
+    public Page<PaymentDto> getAllPaymentsAdmin(PaymentFilter filter, Pageable pageable) {
+        PaymentSpecification spec = new PaymentSpecification(
+                filter.getUserId(),
+                filter.getReservationId(),
+                filter.getStatus(),
+                filter.getMinAmount(),
+                filter.getMaxAmount(),
+                filter.getStartDate(),
+                filter.getEndDate()
+        );
+        Page<Payment> payments = paymentRepository.findAll(spec, pageable);
+        return payments.map(paymentMapper::toPaymentDto);
+    }
+
     @Transactional
     public void cancelPayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
@@ -184,6 +200,14 @@ public class PaymentService {
                     model
             );
         } catch (Exception ignored) {}
+    }
+
+    @Transactional
+    public void deletePayment(Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new PaymentException("Payment not found with ID: " + paymentId));
+        // Additional checks could be added here, e.g., only allow deletion of certain statuses
+        paymentRepository.delete(payment);
     }
 
     @Transactional(readOnly = true)
@@ -217,6 +241,11 @@ public class PaymentService {
                 .completedPayments(completedPayments)
                 .failedPayments(failedPayments)
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public BigDecimal getTotalRevenue() {
+        return paymentRepository.sumAmountByStatus(PaymentStatus.COMPLETED).orElse(BigDecimal.ZERO);
     }
 
     @Transactional(readOnly = true)

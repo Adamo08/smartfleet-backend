@@ -134,4 +134,12 @@ public class UserService {
         user.setResetTokenExpiry(null);
         userRepository.save(user);
     }
+
+    public Long countAllUsers() {
+        return userRepository.count();
+    }
+
+    public Long countUsersByRole(String role) {
+        return userRepository.countByRole(Role.valueOf(role.toUpperCase()));
+    }
 }

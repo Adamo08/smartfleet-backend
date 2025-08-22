@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
@@ -109,5 +110,37 @@ public class NotificationController {
             "This is a test real-time notification! 🚀"
         );
         return ResponseEntity.ok(Map.of("message", "Test notification sent successfully."));
+    }
+
+    @Operation(summary = "[ADMIN] Get all notifications",
+            description = "Retrieves a paginated and filtered list of all notifications in the system. Requires ADMIN role.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Successfully retrieved notifications"),
+                    @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                    @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges (requires ADMIN role)"),
+                    @ApiResponse(responseCode = "500", description = "Internal server error")
+            })
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Page<NotificationDto>> getAllNotificationsAdmin(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDirection,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) Boolean read,
+            @RequestParam(required = false) NotificationType type,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate
+    ) {
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.fromString(sortDirection), sortBy));
+        NotificationFilter filter = NotificationFilter.builder()
+                .userId(userId)
+                .read(read)
+                .type(type)
+                .startDate(startDate)
+                .endDate(endDate)
+                .build();
+        return ResponseEntity.ok(notificationService.getAllNotificationsAdmin(filter, pageable));
     }
 }
