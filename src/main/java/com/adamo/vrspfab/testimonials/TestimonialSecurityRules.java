@@ -15,6 +15,9 @@ public class TestimonialSecurityRules implements SecurityRules {
                 .requestMatchers(HttpMethod.GET, "/testimonials/**").authenticated()
                 .requestMatchers(HttpMethod.POST, "/testimonials").hasRole("CUSTOMER")
                 .requestMatchers(HttpMethod.PUT, "/testimonials/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/testimonials/**").hasRole("ADMIN");
+                .requestMatchers(HttpMethod.DELETE, "/testimonials/**").hasRole("ADMIN")
+                
+                // Admin-specific testimonial endpoints
+                .requestMatchers("/admin/testimonials/**").hasRole("ADMIN");
     }
 }

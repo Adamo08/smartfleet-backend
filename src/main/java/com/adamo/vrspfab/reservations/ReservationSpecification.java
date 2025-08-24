@@ -41,6 +41,39 @@ public class ReservationSpecification {
                 predicates.add(criteriaBuilder.equal(root.get("status"), filter.getStatus()));
             }
 
+            if (filter.getStartDate() != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("startDate"), filter.getStartDate()));
+            }
+
+            if (filter.getEndDate() != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("endDate"), filter.getEndDate()));
+            }
+
+            // Add search term functionality
+            if (filter.getSearchTerm() != null && !filter.getSearchTerm().trim().isEmpty()) {
+                String searchTerm = "%" + filter.getSearchTerm().toLowerCase().trim() + "%";
+                
+                // Search across user names
+                Predicate userSearch = criteriaBuilder.or(
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("user").get("firstName")), searchTerm),
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("user").get("lastName")), searchTerm)
+                );
+                
+                // Search across vehicle details
+                Predicate vehicleSearch = criteriaBuilder.or(
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("vehicle").get("brand")), searchTerm),
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("vehicle").get("model")), searchTerm)
+                );
+                
+                // Search across reservation ID
+                Predicate idSearch = criteriaBuilder.like(
+                    criteriaBuilder.lower(root.get("id").as(String.class)), 
+                    searchTerm
+                );
+                
+                predicates.add(criteriaBuilder.or(userSearch, vehicleSearch, idSearch));
+            }
+
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
     }

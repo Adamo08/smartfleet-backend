@@ -26,6 +26,15 @@ public class VehicleSecurityRules implements SecurityRules {
                 .requestMatchers(HttpMethod.PUT, "/vehicles/{id}").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/vehicles/{id}").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PATCH, "/vehicles/{id}/status").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PATCH, "/vehicles/{id}/mileage").hasRole("ADMIN");
+                .requestMatchers(HttpMethod.PATCH, "/vehicles/{id}/mileage").hasRole("ADMIN")
+                
+                // Admin-only access for vehicle categories
+                .requestMatchers("/admin/vehicle-categories/**").hasRole("ADMIN")
+                
+                // Admin-only access for vehicle brands
+                .requestMatchers("/admin/vehicle-brands/**").hasRole("ADMIN")
+                
+                // Admin-only access for vehicle models
+                .requestMatchers("/admin/vehicle-models/**").hasRole("ADMIN");
     }
 }

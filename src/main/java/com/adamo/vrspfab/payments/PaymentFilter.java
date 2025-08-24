@@ -15,4 +15,5 @@ public class PaymentFilter {
     private BigDecimal maxAmount;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
+    private String searchTerm;
 }

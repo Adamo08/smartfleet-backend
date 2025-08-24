@@ -20,6 +20,7 @@ import org.springframework.security.access.AccessDeniedException;
 import com.adamo.vrspfab.users.Role;
 
 import java.util.Optional;
+import java.util.List;
 
 
 @AllArgsConstructor
@@ -233,4 +234,82 @@ public class TestimonialService {
         return testimonialsPage.map(testimonialMapper::toDto);
     }
 
+    @Transactional(readOnly = true)
+    public Page<TestimonialDto> getAllTestimonials(Long userId, Long vehicleId, Boolean approved, Pageable pageable) {
+        Page<Testimonial> testimonialsPage;
+
+        if (userId != null && vehicleId != null && approved != null) {
+            testimonialsPage = testimonialRepository.findByUserIdAndVehicleIdAndApproved(userId, vehicleId, approved, pageable);
+        } else if (userId != null && approved != null) {
+            testimonialsPage = testimonialRepository.findByUserIdAndApproved(userId, approved, pageable);
+        } else if (vehicleId != null && approved != null) {
+            testimonialsPage = testimonialRepository.findByVehicleIdAndApproved(vehicleId, approved, pageable);
+        } else if (userId != null) {
+            testimonialsPage = testimonialRepository.findByUserId(userId, pageable);
+        } else if (vehicleId != null) {
+            testimonialsPage = testimonialRepository.findByVehicleId(vehicleId, pageable);
+        } else if (approved != null) {
+            testimonialsPage = testimonialRepository.findByApproved(approved, pageable);
+        } else {
+            testimonialsPage = testimonialRepository.findAll(pageable);
+        }
+
+        logger.debug("Fetched {} testimonials with filters. Total elements: {}",
+                testimonialsPage.getNumberOfElements(), testimonialsPage.getTotalElements());
+        return testimonialsPage.map(testimonialMapper::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TestimonialDto> getPendingTestimonials() {
+        List<Testimonial> pendingTestimonials = testimonialRepository.findByApprovedFalse();
+        logger.debug("Fetched {} pending testimonials", pendingTestimonials.size());
+        return pendingTestimonials.stream().map(testimonialMapper::toDto).toList();
+    }
+
+    @Transactional
+    public TestimonialDto rejectTestimonial(Long id, String reason) {
+        logger.info("Rejecting testimonial with ID: {} with reason: {}", id, reason);
+        Testimonial testimonial = testimonialRepository.findWithDetailsById(id)
+                .orElseThrow(() -> {
+                    logger.warn("Testimonial not found with ID: {}", id);
+                    return new ResourceNotFoundException("Testimonial not found with ID: " + id, "Testimonial");
+                });
+
+        testimonial.setApproved(false);
+        
+        Testimonial updatedTestimonial = testimonialRepository.save(testimonial);
+        logger.info("Testimonial with ID: {} rejected successfully.", id);
+        return testimonialMapper.toDto(updatedTestimonial);
+    }
+
+    @Transactional
+    public TestimonialDto addAdminReply(Long id, String adminReplyContent) {
+        logger.info("Adding admin reply to testimonial with ID: {}", id);
+        Testimonial testimonial = testimonialRepository.findWithDetailsById(id)
+                .orElseThrow(() -> {
+                    logger.warn("Testimonial not found with ID: {}", id);
+                    return new ResourceNotFoundException("Testimonial not found with ID: " + id, "Testimonial");
+                });
+
+        testimonial.setAdminReplyContent(adminReplyContent);
+        
+        Testimonial updatedTestimonial = testimonialRepository.save(testimonial);
+        logger.info("Admin reply added to testimonial with ID: {} successfully.", id);
+        return testimonialMapper.toDto(updatedTestimonial);
+    }
+
+    @Transactional(readOnly = true)
+    public TestimonialStatsDto getTestimonialStats() {
+        long totalTestimonials = testimonialRepository.count();
+        long approvedTestimonials = testimonialRepository.countByApprovedTrue();
+        long pendingTestimonials = testimonialRepository.countByApprovedFalse();
+        double averageRating = testimonialRepository.findAverageRatingByApprovedTrue();
+        
+        return TestimonialStatsDto.builder()
+                .totalTestimonials(totalTestimonials)
+                .approvedTestimonials(approvedTestimonials)
+                .pendingTestimonials(pendingTestimonials)
+                .averageRating(averageRating)
+                .build();
+    }
 }

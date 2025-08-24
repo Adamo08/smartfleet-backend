@@ -23,11 +23,27 @@ public class PaymentSecurityRules implements SecurityRules {
                 // Customer and Admin can create payments
                 .requestMatchers(HttpMethod.POST, "/payments/session").hasAnyRole(CUSTOMER, ADMIN)
                 .requestMatchers(HttpMethod.POST, "/payments/process").hasAnyRole(CUSTOMER, ADMIN)
-                .requestMatchers(HttpMethod.GET, "/payments/*/status").hasAnyRole(CUSTOMER, ADMIN)
+                .requestMatchers(HttpMethod.POST, "/payments/confirm/{sessionId}").hasAnyRole(CUSTOMER, ADMIN)
+                .requestMatchers(HttpMethod.GET, "/payments/{paymentId}/status").hasAnyRole(CUSTOMER, ADMIN)
+
+                // Payment details endpoints - authenticated users can view their own payments
+                .requestMatchers(HttpMethod.GET, "/payments/{paymentId}").authenticated()
+                .requestMatchers(HttpMethod.GET, "/payments/reservation/{reservationId}").authenticated()
+
+                // Payment history endpoints - authenticated users can view their own history
+                .requestMatchers(HttpMethod.GET, "/payments/history").authenticated()
+                .requestMatchers(HttpMethod.GET, "/payments/history/filtered").authenticated()
+
+                // Payment management endpoints - authenticated users can manage their own payments
+                .requestMatchers(HttpMethod.POST, "/payments/{paymentId}/cancel").hasAnyRole(CUSTOMER, ADMIN)
 
                 // Refund endpoints - can be initiated by customers or managed by admins
                 .requestMatchers(HttpMethod.POST, "/payments/refund").hasAnyRole(CUSTOMER, ADMIN)
                 .requestMatchers(HttpMethod.GET, "/payments/refund/{refundId}").hasAnyRole(CUSTOMER, ADMIN)
+
+                // Payment methods and validation endpoints - authenticated users
+                .requestMatchers(HttpMethod.GET, "/payments/methods").authenticated()
+                .requestMatchers(HttpMethod.GET, "/payments/methods/{methodId}/validate").authenticated()
 
                 // Analytics endpoint restricted to Admins
                 .requestMatchers(HttpMethod.GET, "/payments/analytics").hasRole(ADMIN)

@@ -76,4 +76,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long>,
      * @return the number of reservations with the given status
      */
     Long countByStatus(ReservationStatus status);
+    @EntityGraph(attributePaths = {"user", "vehicle", "slot"}, type = EntityGraph.EntityGraphType.LOAD)
+    Page<Reservation> findByUserId(Long id, Pageable pageable);
 }

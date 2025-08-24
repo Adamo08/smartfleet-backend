@@ -10,8 +10,8 @@ public interface TestimonialMapper {
     @Mapping(target = "vehicleId", source = "vehicle.id")
     @Mapping(target = "userName", expression = "java(testimonial.getUser().getFirstName() + \" \" + testimonial.getUser().getLastName())") // Concatenate first and last name
     @Mapping(target = "userEmail", source = "user.email")
-    @Mapping(target = "vehicleBrand", source = "vehicle.brand")
-    @Mapping(target = "vehicleModel", source = "vehicle.model")
+    @Mapping(target = "vehicleBrand", source = "vehicle.brand.name")
+    @Mapping(target = "vehicleModel", source = "vehicle.model.name")
     TestimonialDto toDto(Testimonial testimonial);
 
     @Mapping(target = "user.id", source = "userId")

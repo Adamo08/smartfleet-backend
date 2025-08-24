@@ -16,6 +16,7 @@ public class ReservationSecurityRules implements SecurityRules {
                 // Rules for Authenticated Users (Customers)
                 .requestMatchers(HttpMethod.POST, "/reservations").authenticated()
                 .requestMatchers(HttpMethod.GET, "/reservations").authenticated()
+                .requestMatchers(HttpMethod.GET, "/reservations/filtered").authenticated()
                 .requestMatchers(HttpMethod.GET, "/reservations/{id}").authenticated()
                 .requestMatchers(HttpMethod.POST, "/reservations/{id}/cancel").authenticated()
                 // Rules for Administrators

@@ -118,6 +118,41 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.getUserPaymentHistory(pageable));
     }
 
+    @Operation(summary = "Get filtered user payment history",
+               description = "Retrieves a filtered and paginated list of payment transactions for the authenticated user.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Filtered payment history retrieved successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid filter parameters"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @GetMapping("/history/filtered")
+    public ResponseEntity<Page<PaymentDto>> getUserPaymentHistoryFiltered(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDirection,
+            @RequestParam(required = false) PaymentStatus status,
+            @RequestParam(required = false) BigDecimal minAmount,
+            @RequestParam(required = false) BigDecimal maxAmount,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(required = false) String searchTerm
+    ) {
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.fromString(sortDirection), sortBy));
+        
+        PaymentFilter filter = PaymentFilter.builder()
+                .status(status)
+                .minAmount(minAmount)
+                .maxAmount(maxAmount)
+                .startDate(startDate)
+                .endDate(endDate)
+                .searchTerm(searchTerm)
+                .build();
+        
+        return ResponseEntity.ok(paymentService.getUserPaymentHistoryWithFilter(filter, pageable));
+    }
+
     @Operation(summary = "Cancel a payment",
                description = "Cancels a payment by its ID. This might initiate a refund if the payment was already captured.",
                responses = {
@@ -255,7 +290,8 @@ public class PaymentController {
             @RequestParam(required = false) BigDecimal minAmount,
             @RequestParam(required = false) BigDecimal maxAmount,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(required = false) String searchTerm
     ) {
         Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.fromString(sortDirection), sortBy));
         PaymentFilter filter = PaymentFilter.builder()
@@ -266,6 +302,7 @@ public class PaymentController {
                 .maxAmount(maxAmount)
                 .startDate(startDate)
                 .endDate(endDate)
+                .searchTerm(searchTerm)
                 .build();
         return ResponseEntity.ok(paymentService.getAllPaymentsAdmin(filter, pageable));
     }

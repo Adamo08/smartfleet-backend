@@ -7,8 +7,8 @@ import org.mapstruct.MappingConstants; // Import for MappingConstants.ComponentM
 @Mapper(componentModel = "spring")
 public interface SlotMapper {
     @Mapping(target = "vehicleId", source = "vehicle.id")
-    @Mapping(target = "vehicleBrand", source = "vehicle.brand")
-    @Mapping(target = "vehicleModel", source = "vehicle.model")
+    @Mapping(target = "vehicleBrand", source = "vehicle.brand.name")
+    @Mapping(target = "vehicleModel", source = "vehicle.model.name")
     SlotDto toDto(Slot slot);
 
     @Mapping(target = "vehicle.id", source = "vehicleId")

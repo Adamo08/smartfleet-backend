@@ -41,4 +41,14 @@ public interface TestimonialRepository extends JpaRepository<Testimonial, Long> 
 
     @EntityGraph(attributePaths = {"user", "vehicle"}, type = EntityGraph.EntityGraphType.LOAD)
     Optional<Testimonial> findByUserIdAndVehicleId(Long userId, Long vehicleId);
+
+    // Methods for admin functionality
+    @EntityGraph(attributePaths = {"user", "vehicle"}, type = EntityGraph.EntityGraphType.LOAD)
+    java.util.List<Testimonial> findByApprovedFalse();
+
+    long countByApprovedTrue();
+    
+    long countByApprovedFalse();
+    
+    double findAverageRatingByApprovedTrue();
 }

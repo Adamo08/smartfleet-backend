@@ -17,8 +17,9 @@ public class PaymentSpecification implements Specification<Payment> {
     private final BigDecimal maxAmount;
     private final LocalDateTime startDate;
     private final LocalDateTime endDate;
+    private final String searchTerm;
 
-    public PaymentSpecification(Long userId, Long reservationId, PaymentStatus status, BigDecimal minAmount, BigDecimal maxAmount, LocalDateTime startDate, LocalDateTime endDate) {
+    public PaymentSpecification(Long userId, Long reservationId, PaymentStatus status, BigDecimal minAmount, BigDecimal maxAmount, LocalDateTime startDate, LocalDateTime endDate, String searchTerm) {
         this.userId = userId;
         this.reservationId = reservationId;
         this.status = status;
@@ -26,6 +27,7 @@ public class PaymentSpecification implements Specification<Payment> {
         this.maxAmount = maxAmount;
         this.startDate = startDate;
         this.endDate = endDate;
+        this.searchTerm = searchTerm;
     }
 
     @Override
@@ -52,6 +54,37 @@ public class PaymentSpecification implements Specification<Payment> {
         }
         if (endDate != null) {
             predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("createdAt"), endDate));
+        }
+
+        // Add search term functionality
+        if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+            String searchPattern = "%" + searchTerm.toLowerCase().trim() + "%";
+            
+            // Search across payment ID
+            Predicate idSearch = criteriaBuilder.like(
+                criteriaBuilder.lower(root.get("id").as(String.class)), 
+                searchPattern
+            );
+            
+            // Search across transaction ID
+            Predicate transactionSearch = criteriaBuilder.like(
+                criteriaBuilder.lower(root.get("transactionId")), 
+                searchPattern
+            );
+            
+            // Search across user names
+            Predicate userSearch = criteriaBuilder.or(
+                criteriaBuilder.like(criteriaBuilder.lower(root.get("reservation").get("user").get("firstName")), searchPattern),
+                criteriaBuilder.like(criteriaBuilder.lower(root.get("reservation").get("user").get("lastName")), searchPattern)
+            );
+            
+            // Search across reservation ID
+            Predicate reservationSearch = criteriaBuilder.like(
+                criteriaBuilder.lower(root.get("reservation").get("id").as(String.class)), 
+                searchPattern
+            );
+            
+            predicates.add(criteriaBuilder.or(idSearch, transactionSearch, userSearch, reservationSearch));
         }
 
         return criteriaBuilder.and(predicates.toArray(new Predicate[0]));

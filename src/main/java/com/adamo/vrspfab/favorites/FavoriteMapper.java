@@ -10,8 +10,8 @@ public interface FavoriteMapper {
     @Mapping(target = "vehicleId", source = "vehicle.id")
     @Mapping(target = "userName", expression = "java(favorite.getUser().getFirstName() + \" \" + favorite.getUser().getLastName())") // Concatenate first and last name
     @Mapping(target = "userEmail", source = "user.email")
-    @Mapping(target = "vehicleBrand", source = "vehicle.brand")
-    @Mapping(target = "vehicleModel", source = "vehicle.model")
+    @Mapping(target = "vehicleBrand", source = "vehicle.brand.name")
+    @Mapping(target = "vehicleModel", source = "vehicle.model.name")
     FavoriteDto toDto(Favorite favorite);
 
     @Mapping(target = "user.id", source = "userId")

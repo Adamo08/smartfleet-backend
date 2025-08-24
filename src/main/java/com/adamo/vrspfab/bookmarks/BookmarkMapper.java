@@ -18,8 +18,8 @@ public interface BookmarkMapper {
 
     // Map Vehicle details from Reservation
     @Mapping(target = "vehicleId", source = "reservation.vehicle.id")
-    @Mapping(target = "vehicleBrand", source = "reservation.vehicle.brand")
-    @Mapping(target = "vehicleModel", source = "reservation.vehicle.model")
+    @Mapping(target = "vehicleBrand", source = "reservation.vehicle.brand.name")
+    @Mapping(target = "vehicleModel", source = "reservation.vehicle.model.name")
     BookmarkDto toDto(Bookmark bookmark);
 
     @Mapping(target = "user.id", source = "userId")

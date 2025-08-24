@@ -26,21 +26,23 @@ public class Vehicle {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "brand")
-    private String brand;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private VehicleCategory category;
 
-    @Column(name = "model")
-    private String model;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "brand_id")
+    private VehicleBrand brand;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "model_id")
+    private VehicleModel model;
 
     @Column(name = "year")
     private int year;
 
     @Column(name = "license_plate", unique = true)
     private String licensePlate;
-
-    @Column(name = "type")
-    @Enumerated(EnumType.STRING)
-    private VehicleType vehicleType;
 
     @Column(name = "fuel_type")
     @Enumerated(EnumType.STRING)

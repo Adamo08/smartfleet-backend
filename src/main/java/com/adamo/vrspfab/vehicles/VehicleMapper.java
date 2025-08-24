@@ -10,8 +10,19 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 )
 public interface VehicleMapper {
 
+    @Mapping(target = "categoryId", source = "category.id")
+    @Mapping(target = "categoryName", source = "category.name")
+    @Mapping(target = "brandId", source = "brand.id")
+    @Mapping(target = "brandName", source = "brand.name")
+    @Mapping(target = "modelId", source = "model.id")
+    @Mapping(target = "modelName", source = "model.name")
+    @Mapping(target = "brand", source = "brand.name")
+    @Mapping(target = "model", source = "model.name")
     VehicleDto toDto(Vehicle vehicle);
 
+    @Mapping(target = "category", ignore = true)
+    @Mapping(target = "brand", ignore = true)
+    @Mapping(target = "model", ignore = true)
     @Mapping(target = "slots", ignore = true)
     @Mapping(target = "favorites", ignore = true)
     @Mapping(target = "reservations", ignore = true)
@@ -21,6 +32,9 @@ public interface VehicleMapper {
     Vehicle toEntity(VehicleDto vehicleDto);
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "category", ignore = true)
+    @Mapping(target = "brand", ignore = true)
+    @Mapping(target = "model", ignore = true)
     @Mapping(target = "slots", ignore = true)
     @Mapping(target = "favorites", ignore = true)
     @Mapping(target = "reservations", ignore = true)
@@ -30,8 +44,8 @@ public interface VehicleMapper {
     void updateVehicleFromDto(VehicleDto dto, @MappingTarget Vehicle entity);
 
     @Mapping(target = "id", source = "id")
-    @Mapping(target = "brand", source = "brand")
-    @Mapping(target = "model", source = "model")
+    @Mapping(target = "brand", source = "brand.name")
+    @Mapping(target = "model", source = "model.name")
     @Mapping(target = "licensePlate", source = "licensePlate")
     @Mapping(target = "year", source = "year")
     @Mapping(target = "imageUrl", source = "imageUrl")

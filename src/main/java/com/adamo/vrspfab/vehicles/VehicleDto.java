@@ -9,6 +9,15 @@ import java.time.LocalDate;
 public class VehicleDto {
     private Long id;
 
+    // Entity relationships
+    private Long categoryId;
+    private String categoryName;
+    private Long brandId;
+    private String brandName;
+    private Long modelId;
+    private String modelName;
+
+    // Backward compatibility fields (for existing code)
     @NotBlank(message = "Brand cannot be blank")
     @Size(max = 50, message = "Brand must not exceed 50 characters")
     private String brand;
@@ -26,9 +35,6 @@ public class VehicleDto {
     @NotBlank(message = "License plate cannot be blank")
     @Pattern(regexp = "^[A-Z0-9-]{1,10}$", message = "License plate must be 1-10 alphanumeric characters or hyphens")
     private String licensePlate;
-
-    @NotNull(message = "Vehicle type cannot be null")
-    private VehicleType vehicleType;
 
     @NotNull(message = "Fuel type cannot be null")
     private FuelType fuelType;

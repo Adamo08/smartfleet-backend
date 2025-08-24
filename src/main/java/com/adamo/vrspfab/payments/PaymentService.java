@@ -164,6 +164,26 @@ public class PaymentService {
     }
 
     @Transactional(readOnly = true)
+    public Page<PaymentDto> getUserPaymentHistoryWithFilter(PaymentFilter filter, Pageable pageable) {
+        User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+        
+        // Create a specification that enforces user ownership and applies filters
+        PaymentSpecification spec = new PaymentSpecification(
+                currentUser.getId(), // Always filter by current user
+                filter.getReservationId(),
+                filter.getStatus(),
+                filter.getMinAmount(),
+                filter.getMaxAmount(),
+                filter.getStartDate(),
+                filter.getEndDate(),
+                filter.getSearchTerm()
+        );
+        
+        Page<Payment> payments = paymentRepository.findAll(spec, pageable);
+        return payments.map(paymentMapper::toPaymentDto);
+    }
+
+    @Transactional(readOnly = true)
     public Page<PaymentDto> getAllPaymentsAdmin(PaymentFilter filter, Pageable pageable) {
         PaymentSpecification spec = new PaymentSpecification(
                 filter.getUserId(),
@@ -172,7 +192,8 @@ public class PaymentService {
                 filter.getMinAmount(),
                 filter.getMaxAmount(),
                 filter.getStartDate(),
-                filter.getEndDate()
+                filter.getEndDate(),
+                filter.getSearchTerm()
         );
         Page<Payment> payments = paymentRepository.findAll(spec, pageable);
         return payments.map(paymentMapper::toPaymentDto);

@@ -33,6 +33,7 @@ public class ReservationService {
     private final NotificationService notificationService;
     private final ReservationMapper reservationMapper;
     private final SlotRepository slotRepository;
+    private final SecurityUtilsService securityUtilsService;
 
     /**
      * Creates a new reservation for the currently authenticated user.
@@ -130,6 +131,24 @@ public class ReservationService {
         var filter = ReservationFilter.builder().build(); // Empty filter, spec will apply user constraint
         Specification<Reservation> spec = ReservationSpecification.withFilter(filter, currentUser);
         return reservationRepository.findAll(spec, pageable).map(reservationMapper::toSummaryDto);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ReservationSummaryDto> getUserReservations(Pageable pageable) {
+        User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+        Page<Reservation> reservations = reservationRepository.findByUserId(currentUser.getId(), pageable);
+        return reservations.map(reservationMapper::toSummaryDto);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ReservationSummaryDto> getUserReservationsWithFilter(ReservationFilter filter, Pageable pageable) {
+        User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+        
+        // Create a specification that enforces user ownership and applies filters
+        Specification<Reservation> spec = ReservationSpecification.withFilter(filter, currentUser);
+        
+        Page<Reservation> reservations = reservationRepository.findAll(spec, pageable);
+        return reservations.map(reservationMapper::toSummaryDto);
     }
 
     /**

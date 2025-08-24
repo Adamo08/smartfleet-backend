@@ -13,4 +13,7 @@ public class ReservationFilter {
     private Long userId;
     private Long vehicleId;
     private ReservationStatus status;
+    private String searchTerm;
+    private java.time.LocalDateTime startDate;
+    private java.time.LocalDateTime endDate;
 }
