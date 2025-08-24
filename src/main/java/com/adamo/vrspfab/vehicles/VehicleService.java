@@ -31,6 +31,9 @@ public class VehicleService {
     private final VehicleMapper vehicleMapper;
     private final ReservationRepository reservationRepository;
     private final ReservationMapper reservationMapper;
+    private final VehicleCategoryRepository vehicleCategoryRepository;
+    private final VehicleBrandRepository vehicleBrandRepository;
+    private final VehicleModelRepository vehicleModelRepository;
 
     /**
      * Creates a new vehicle.
@@ -51,7 +54,28 @@ public class VehicleService {
             log.warn("Vehicle creation failed: Year {} is in the future.", vehicleDto.getYear());
             throw new InvalidVehicleDataException("Vehicle year cannot be in the future.");
         }
+        
         Vehicle vehicle = vehicleMapper.toEntity(vehicleDto);
+        
+        // Set the related entities if IDs are provided
+        if (vehicleDto.getCategoryId() != null) {
+            VehicleCategory category = vehicleCategoryRepository.findById(vehicleDto.getCategoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Vehicle category not found with ID: " + vehicleDto.getCategoryId(), "VehicleCategory"));
+            vehicle.setCategory(category);
+        }
+        
+        if (vehicleDto.getBrandId() != null) {
+            VehicleBrand brand = vehicleBrandRepository.findById(vehicleDto.getBrandId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Vehicle brand not found with ID: " + vehicleDto.getBrandId(), "VehicleBrand"));
+            vehicle.setBrand(brand);
+        }
+        
+        if (vehicleDto.getModelId() != null) {
+            VehicleModel model = vehicleModelRepository.findById(vehicleDto.getModelId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Vehicle model not found with ID: " + vehicleDto.getModelId(), "VehicleModel"));
+            vehicle.setModel(model);
+        }
+        
         Vehicle savedVehicle = vehicleRepository.save(vehicle);
         log.info("Vehicle created successfully with ID: {}", savedVehicle.getId());
         return vehicleMapper.toDto(savedVehicle);
@@ -119,13 +143,13 @@ public class VehicleService {
     @Transactional(readOnly = true)
     @Cacheable(value = "vehicles", key = "#page + '-' + #size + '-' + #sortBy + '-' + #sortDirection")
     public Page<VehicleDto> getAllVehicles(
-            int page, int size, String sortBy, String sortDirection, String brand, String model, String vehicleType, String fuelType, String status, Double minPrice, Double maxPrice
+            int page, int size, String sortBy, String sortDirection, VehicleFilter filters
     ) {
         log.debug("Fetching all vehicles: page={}, size={}, sortBy={}, sortDirection={}",
                 page, size, sortBy, sortDirection);
         Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
-        VehicleSpecification spec = new VehicleSpecification(brand, model, vehicleType, fuelType, status, minPrice, maxPrice);
+        VehicleSpecification spec = new VehicleSpecification(filters);
         Page<Vehicle> vehicles = vehicleRepository.findAll(spec, pageable);
         return vehicles.map(vehicleMapper::toDto);
     }

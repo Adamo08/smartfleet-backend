@@ -3,6 +3,7 @@ package com.adamo.vrspfab.vehicles;
 import com.adamo.vrspfab.reservations.Reservation;
 import com.adamo.vrspfab.reservations.ReservationDto;
 import com.adamo.vrspfab.reservations.ReservationInfoForVehicleDto;
+import com.adamo.vrspfab.vehicles.VehicleFilter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -95,17 +96,38 @@ public class VehicleController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "ASC") String sortDirection,
-            @RequestParam(required = false) String brand,
-            @RequestParam(required = false) String model,
-            @RequestParam(required = false) String vehicleType,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long brandId,
+            @RequestParam(required = false) Long modelId,
+            @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String fuelType,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Double minPrice,
-            @RequestParam(required = false) Double maxPrice
+            @RequestParam(required = false) Double maxPrice,
+            @RequestParam(required = false) Integer minYear,
+            @RequestParam(required = false) Integer maxYear,
+            @RequestParam(required = false) Double minMileage,
+            @RequestParam(required = false) Double maxMileage
     ) {
         Sort.Direction direction = sortDirection.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
         PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
-        return vehicleService.getAllVehicles(page, size, sortBy, sortDirection, brand, model, vehicleType, fuelType, status, minPrice, maxPrice);
+
+        VehicleFilter filters = VehicleFilter.builder()
+                .search(search)
+                .brandId(brandId)
+                .modelId(modelId)
+                .categoryId(categoryId)
+                .fuelType(fuelType)
+                .status(status)
+                .minPrice(minPrice)
+                .maxPrice(maxPrice)
+                .minYear(minYear)
+                .maxYear(maxYear)
+                .minMileage(minMileage)
+                .maxMileage(maxMileage)
+                .build();
+
+        return vehicleService.getAllVehicles(page, size, sortBy, sortDirection, filters);
     }
 
     @Operation(summary = "Get vehicles by year range",
