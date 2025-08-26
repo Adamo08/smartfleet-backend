@@ -112,15 +112,25 @@ public class PaypalPaymentProvider implements PaymentProvider {
     @Override
     @Transactional
     public SessionResponseDto createPaymentSession(SessionRequestDto requestDto) {
+        log.info("=== PAYPAL SESSION CREATION STARTED ===");
+        log.info("Reservation ID: {}", requestDto.getReservationId());
+        log.info("Amount: {} {}", requestDto.getAmount(), requestDto.getCurrency());
+        log.info("Success URL: {}", requestDto.getSuccessUrl());
+        log.info("Cancel URL: {}", requestDto.getCancelUrl());
+        
         try {
             String token = getAccessToken();
+            log.info("PayPal access token obtained successfully");
+            
             Payment payment = createPendingPayment(requestDto);
+            log.info("Pending payment created with ID: {}", payment.getId());
 
             // 1. Create PayPal Order
             HttpHeaders headers = createAuthHeaders(token);
             PaypalOrderRequest orderRequest = createOrderPayload(requestDto, payment.getId());
             HttpEntity<PaypalOrderRequest> entity = new HttpEntity<>(orderRequest, headers);
 
+            log.info("Creating PayPal order...");
             ResponseEntity<PaypalOrderResponse> response = restTemplate.postForEntity(
                     paypalBaseUrl + "/v2/checkout/orders",
                     entity,
@@ -132,6 +142,8 @@ public class PaypalPaymentProvider implements PaymentProvider {
                 throw new PaymentException("Failed to create PayPal order: Empty response from PayPal.");
             }
 
+            log.info("PayPal order created successfully with ID: {}", orderResponse.getId());
+
             // 2. Find Approval Link
             String approvalUrl = orderResponse.getLinks().stream()
                     .filter(link -> "approve".equals(link.getRel()))
@@ -139,11 +151,19 @@ public class PaypalPaymentProvider implements PaymentProvider {
                     .findFirst()
                     .orElseThrow(() -> new PaymentException("No approval URL found in PayPal response."));
 
+            log.info("PayPal approval URL found: {}", approvalUrl);
+
             // 3. Update our payment record with the PayPal Order ID
             payment.setTransactionId(orderResponse.getId());
             paymentRepository.save(payment);
+            log.info("Payment record updated with PayPal Order ID: {}", orderResponse.getId());
 
-            return new SessionResponseDto(orderResponse.getId(), approvalUrl);
+            // Return our internal payment ID as sessionId and PayPal's approval URL
+            // This allows us to track the payment session and handle redirects properly
+            SessionResponseDto sessionResponse = new SessionResponseDto(payment.getId().toString(), approvalUrl);
+            log.info("=== PAYPAL SESSION CREATION COMPLETED ===");
+            log.info("Session ID: {}, Redirect URL: {}", sessionResponse.getSessionId(), sessionResponse.getCheckoutUrl());
+            return sessionResponse;
 
         } catch (HttpClientErrorException e) {
             log.error("PayPal API error during session creation: {} - {}", e.getStatusCode(), e.getResponseBodyAsString());
@@ -480,7 +500,15 @@ public class PaypalPaymentProvider implements PaymentProvider {
         PaypalPurchaseUnit purchaseUnit = new PaypalPurchaseUnit(amount);
         // include internal reference for reconciliation
         purchaseUnit.setReferenceId(String.valueOf(internalPaymentId));
-        PaypalApplicationContext context = new PaypalApplicationContext(requestDto.getSuccessUrl(), requestDto.getCancelUrl());
+
+        // Use URLs provided by the client as-is (minus query params) to avoid duplicating path segments
+        String providedSuccessUrl = requestDto.getSuccessUrl();
+        String providedCancelUrl = requestDto.getCancelUrl();
+
+        String successUrl = providedSuccessUrl != null ? providedSuccessUrl.split("\\?")[0] : null;
+        String cancelUrl = providedCancelUrl != null ? providedCancelUrl.split("\\?")[0] : null;
+
+        PaypalApplicationContext context = new PaypalApplicationContext(successUrl, cancelUrl);
         return new PaypalOrderRequest("CAPTURE", List.of(purchaseUnit), context);
     }
 
