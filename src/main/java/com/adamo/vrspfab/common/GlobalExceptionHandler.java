@@ -8,6 +8,7 @@ import com.adamo.vrspfab.reservations.ReservationBusinessException;
 import com.adamo.vrspfab.reservations.ReservationConflictException;
 import com.adamo.vrspfab.slots.InvalidSlotStateException;
 import com.adamo.vrspfab.slots.InvalidSlotTimeException;
+import com.adamo.vrspfab.slots.NoAvailableSlotsException;
 import com.adamo.vrspfab.testimonials.DuplicateTestimonialException;
 import com.adamo.vrspfab.users.UserNotFoundException;
 import com.adamo.vrspfab.vehicles.DuplicateLicensePlateException;
@@ -291,6 +292,20 @@ public class GlobalExceptionHandler {
                 request.getDescription(false).replace("uri=", "")
         );
     }
+
+    @ExceptionHandler(NoAvailableSlotsException.class)
+    public ResponseEntity<ErrorDto> handleNoAvailableSlotsException(
+            NoAvailableSlotsException ex, WebRequest request
+    ) {
+        log.warn("No available slots available: {}", ex.getMessage());
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                "Bad Request",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
 
     /**
      * Handles DuplicateLicensePlateException, returning a 409 Conflict status.
