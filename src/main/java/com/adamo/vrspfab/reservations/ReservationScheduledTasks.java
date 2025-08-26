@@ -44,10 +44,13 @@ public class ReservationScheduledTasks {
 
         for (Reservation reservation : reservationsToComplete) {
             reservation.setStatus(ReservationStatus.COMPLETED);
-            // Restore slot availability
-            if (reservation.getSlot() != null) {
-                reservation.getSlot().setAvailable(true);
-                slotRepository.save(reservation.getSlot());
+            // Restore slot availability for all associated slots
+            if (reservation.getSlots() != null && !reservation.getSlots().isEmpty()) {
+                reservation.getSlots().forEach(slot -> {
+                    slot.setAvailable(true);
+                    slot.setReservation(null); // Dissociate from reservation
+                    slotRepository.save(slot);
+                });
             }
 
             // Send notification

@@ -57,9 +57,9 @@ public class Reservation {
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "reservation")
     private Payment payment;
 
-    @OneToOne
-    @JoinColumn(name = "slot_id")
-    private Slot slot;
+    @OneToMany(mappedBy = "reservation", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = false) // Orphan removal is false as slots might exist independently
+    @Builder.Default
+    private Set<Slot> slots = new HashSet<>();
 
     // Bidirectional relationship for Bookmarks
     @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)

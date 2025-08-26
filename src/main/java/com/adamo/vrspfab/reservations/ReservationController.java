@@ -1,7 +1,5 @@
 package com.adamo.vrspfab.reservations;
 
-import com.adamo.vrspfab.slots.SlotDto;
-import com.adamo.vrspfab.slots.SlotService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,7 +24,6 @@ import java.util.List;
 public class ReservationController {
 
     private final ReservationService reservationService;
-    private final SlotService slotService;
 
     /**
      * POST /reservations : Creates a new reservation for the current user.
@@ -153,15 +150,16 @@ public class ReservationController {
     }
 
 
-    @Operation(summary = "Get available slots for a vehicle",
-               description = "Retrieves a list of available slots for a given vehicle ID. This is a helper endpoint for creating reservations.",
-               responses = {
-                       @ApiResponse(responseCode = "200", description = "Successfully retrieved available slots"),
-                       @ApiResponse(responseCode = "404", description = "Vehicle not found"),
-                       @ApiResponse(responseCode = "500", description = "Internal server error")
-               })
-    @GetMapping("/vehicles/{vehicleId}/available-slots")
-    public ResponseEntity<List<SlotDto>> getAvailableSlots(@PathVariable Long vehicleId) {
-        return ResponseEntity.ok(slotService.getAvailableSlotsByVehicleId(vehicleId));
-    }
+    // Removed as this endpoint is better placed in SlotController or its functionality absorbed by a more flexible booking flow
+    // @Operation(summary = "Get available slots for a vehicle",
+    //            description = "Retrieves a list of available slots for a given vehicle ID. This is a helper endpoint for creating reservations.",
+    //            responses = {
+    //                    @ApiResponse(responseCode = "200", description = "Successfully retrieved available slots"),
+    //                    @ApiResponse(responseCode = "404", description = "Vehicle not found"),
+    //                    @ApiResponse(responseCode = "500", description = "Internal server error")
+    //            })
+    // @GetMapping("/vehicles/{vehicleId}/available-slots")
+    // public ResponseEntity<List<SlotDto>> getAvailableSlots(@PathVariable Long vehicleId) {
+    //     return ResponseEntity.ok(slotService.getAvailableSlotsByVehicleId(vehicleId));
+    // }
 }

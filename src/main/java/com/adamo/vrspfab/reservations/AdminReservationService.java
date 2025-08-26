@@ -106,10 +106,12 @@ public class AdminReservationService {
         }
 
         // Update slot availability if cancelled
-        if (newStatus == ReservationStatus.CANCELLED && savedReservation.getSlot() != null) {
-            Slot slot = savedReservation.getSlot();
-            slot.setAvailable(true);
-            slotRepository.save(slot);
+        if (newStatus == ReservationStatus.CANCELLED && savedReservation.getSlots() != null && !savedReservation.getSlots().isEmpty()) {
+            savedReservation.getSlots().forEach(slot -> {
+                slot.setAvailable(true);
+                slot.setReservation(null); // Dissociate from reservation
+                slotRepository.save(slot);
+            });
         }
 
         return reservationMapper.toDetailedDto(savedReservation);

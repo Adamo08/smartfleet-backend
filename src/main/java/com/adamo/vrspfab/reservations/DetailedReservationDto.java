@@ -6,6 +6,7 @@ import com.adamo.vrspfab.vehicles.VehicleDto;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 /**
  * A detailed Data Transfer Object representing a single Reservation.
@@ -16,7 +17,7 @@ public class DetailedReservationDto {
     private Long id;
     private UserDto user;
     private VehicleDto vehicle;
-    private SlotDto slot;
+    private Set<SlotDto> slots;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private String comment;

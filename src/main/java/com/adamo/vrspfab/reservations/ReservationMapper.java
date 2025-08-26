@@ -16,7 +16,7 @@ public interface ReservationMapper {
      */
     @Mapping(target = "user", source = "user")
     @Mapping(target = "vehicle", source = "vehicle")
-    @Mapping(target = "slot", source = "slot")
+    @Mapping(target = "slots", source = "slots")
     @Mapping(target = "createdAt", source = "createdAt")
     DetailedReservationDto toDetailedDto(Reservation reservation);
 
