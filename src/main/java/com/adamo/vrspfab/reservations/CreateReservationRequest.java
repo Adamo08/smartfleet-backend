@@ -23,13 +23,6 @@ public class CreateReservationRequest {
 
 
     /**
-     * The unique identifier of the slot where the vehicle will be reserved.
-     * Must not be null.
-     */
-    @NotNull(message = "Slot ID cannot be null.")
-    private Long slotId;
-
-    /**
      * The start date and time for the reservation.
      * Must not be null and must be in the future.
      */

@@ -37,7 +37,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long>,
      * @return A page of reservations.
      */
     @NonNull
-    @EntityGraph(attributePaths = {"user", "vehicle", "slot"}, type = EntityGraph.EntityGraphType.LOAD)
+    @EntityGraph(attributePaths = {"user", "vehicle", "slots"}, type = EntityGraph.EntityGraphType.LOAD)
     Page<Reservation> findAll(Specification<Reservation> spec,@NonNull Pageable pageable);
 
     /**
@@ -49,11 +49,11 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long>,
      * @param endDate The end time of the proposed reservation.
      * @return A list of overlapping reservations.
      */
-    @EntityGraph(attributePaths = {"user", "vehicle", "slot"}, type = EntityGraph.EntityGraphType.LOAD)
+    @EntityGraph(attributePaths = {"user", "vehicle", "slots"}, type = EntityGraph.EntityGraphType.LOAD)
     @Query("SELECT r FROM Reservation r WHERE r.vehicle.id = :vehicleId AND r.status <> 'CANCELLED' AND r.startDate < :endDate AND r.endDate > :startDate")
     List<Reservation> findOverlappingReservations(Long vehicleId, LocalDateTime startDate, LocalDateTime endDate);
 
-    @EntityGraph(attributePaths = {"user", "vehicle", "slot"}, type = EntityGraph.EntityGraphType.LOAD)
+    @EntityGraph(attributePaths = {"user", "vehicle", "slots"}, type = EntityGraph.EntityGraphType.LOAD)
     @Query("SELECT r FROM Reservation r WHERE r.vehicle.id = :vehicleId")
     Page<Reservation> findByVehicleId(Long vehicleId, Pageable pageable);
 
@@ -66,7 +66,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long>,
      * @param now The timestamp to compare the end date against.
      * @return A list of completable reservations.
      */
-    @EntityGraph(attributePaths = {"user", "vehicle", "slot"}, type = EntityGraph.EntityGraphType.LOAD)
+    @EntityGraph(attributePaths = {"user", "vehicle", "slots"}, type = EntityGraph.EntityGraphType.LOAD)
     List<Reservation> findAllByStatusAndEndDateBefore(ReservationStatus status, LocalDateTime now);
 
     /**
@@ -76,6 +76,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long>,
      * @return the number of reservations with the given status
      */
     Long countByStatus(ReservationStatus status);
-    @EntityGraph(attributePaths = {"user", "vehicle", "slot"}, type = EntityGraph.EntityGraphType.LOAD)
+    @EntityGraph(attributePaths = {"user", "vehicle", "slots"}, type = EntityGraph.EntityGraphType.LOAD)
     Page<Reservation> findByUserId(Long id, Pageable pageable);
 }

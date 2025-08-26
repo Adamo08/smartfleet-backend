@@ -2,20 +2,24 @@ package com.adamo.vrspfab.reservations;
 
 import com.adamo.vrspfab.common.ResourceNotFoundException;
 import com.adamo.vrspfab.common.SecurityUtilsService;
+import com.adamo.vrspfab.slots.NoAvailableSlotsException;
 import com.adamo.vrspfab.notifications.NotificationService;
 import com.adamo.vrspfab.notifications.NotificationType;
-import com.adamo.vrspfab.slots.*;
+import com.adamo.vrspfab.slots.SlotRepository;
 import com.adamo.vrspfab.users.Role;
 import com.adamo.vrspfab.users.User;
 import com.adamo.vrspfab.vehicles.VehicleMapper;
 import com.adamo.vrspfab.vehicles.VehicleService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * Service class for handling reservation-related operations for authenticated users.
@@ -24,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class ReservationService {
 
     private final ReservationRepository reservationRepository;
@@ -40,7 +45,7 @@ public class ReservationService {
      *
      * @param request The request DTO containing reservation details.
      * @return A detailed DTO of the newly created reservation.
-     * @throws InvalidReservationDateException if the start/end dates are invalid.
+     * @throws NoAvailableSlotsException if no suitable slots are found for the requested dates.
      * @throws ReservationConflictException if the vehicle is already booked for the selected dates.
      */
     @Transactional
@@ -48,36 +53,24 @@ public class ReservationService {
         User currentUser = securityUtils.getCurrentAuthenticatedUser();
         var vehicleDto = vehicleService.getVehicleById(request.getVehicleId());
 
-        // Validate slot
-        Slot slot = slotRepository.findWithVehicleById(request.getSlotId())
-                .orElseThrow(() -> new ResourceNotFoundException("Slot not found with ID: " + request.getSlotId(), "Slot"));
-        if (!slot.isAvailable()) {
-            throw new InvalidSlotStateException("Selected slot is not available.");
-        }
-        if (!slot.getVehicle().getId().equals(request.getVehicleId())) {
-            throw new InvalidSlotStateException("Selected slot does not belong to the requested vehicle.");
-        }
+        // Check if vehicle is available for the requested date range
+        List<Reservation> conflictingReservations = reservationRepository.findOverlappingReservations(
+                request.getVehicleId(),
+                request.getStartDate(),
+                request.getEndDate()
+        );
 
-        if (!slot.getStartTime().equals(request.getStartDate()) || !slot.getEndTime().equals(request.getEndDate())) {
-            throw new InvalidSlotTimeException("Reservation dates must match the selected slot's start and end times.");
+        if (!conflictingReservations.isEmpty()) {
+            throw new NoAvailableSlotsException("Vehicle is not available for the requested date range due to existing reservations.");
         }
-
-        // Check for overlapping reservations (optional, as slot availability should suffice)
-        if (!reservationRepository.findOverlappingReservations(request.getVehicleId(), request.getStartDate(), request.getEndDate()).isEmpty()) {
-            throw new ReservationConflictException("Vehicle is unavailable for the selected dates.");
-        }
-
-        // Book the slot
-        slot.setAvailable(false);
-        slotRepository.save(slot);
 
         // Create reservation
         Reservation reservation = reservationMapper.fromCreateRequest(request);
         reservation.setUser(currentUser);
         reservation.setVehicle(vehicleMapper.toEntity(vehicleDto));
         reservation.setStatus(ReservationStatus.PENDING);
-        reservation.setSlot(slot); // Link the slot to the reservation
-
+        
+        // Save reservation
         Reservation savedReservation = reservationRepository.save(reservation);
 
         // Send notification
@@ -165,10 +158,21 @@ public class ReservationService {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new ReservationNotFoundException(id));
 
-        // Security Check: Ensure the user is the owner of the reservation. (Or an admin)
-        if (!reservation.getUser().getId().equals(currentUser.getId()) || currentUser.getRole() != Role.ADMIN) {
+        // Security Check: Ensure the user is the owner of the reservation OR an admin
+        boolean isOwner = reservation.getUser().getId().equals(currentUser.getId());
+        boolean isAdmin = currentUser.getRole() == Role.ADMIN;
+        
+        log.info("Security check for reservation {}: currentUser={}, reservationOwner={}, isOwner={}, isAdmin={}", 
+                id, currentUser.getId(), reservation.getUser().getId(), isOwner, isAdmin);
+        
+        if (!isOwner && !isAdmin) {
+            log.warn("Access denied for reservation {}: user {} is not owner and not admin", 
+                    id, currentUser.getId());
             throw new AccessDeniedException("You do not have permission to view this reservation.");
         }
+        
+        log.info("Access granted for reservation {}: user {} (owner: {}, admin: {})", 
+                id, currentUser.getId(), isOwner, isAdmin);
 
         return reservationMapper.toDetailedDto(reservation);
     }
@@ -192,11 +196,13 @@ public class ReservationService {
             throw new InvalidReservationStatusException("Reservation cannot be cancelled in its current state: " + reservation.getStatus());
         }
 
-        // Restore slot availability
-        if (reservation.getSlot() != null) {
-            Slot slot = reservation.getSlot();
-            slot.setAvailable(true);
-            slotRepository.save(slot);
+        // Restore slot availability for all associated slots
+        if (!reservation.getSlots().isEmpty()) {
+            reservation.getSlots().forEach(slot -> {
+                slot.setAvailable(true);
+                slot.setReservation(null); // Dissociate from reservation
+                slotRepository.save(slot);
+            });
         }
 
         reservation.setStatus(ReservationStatus.CANCELLED);
