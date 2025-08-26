@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import com.adamo.vrspfab.slots.SlotType;
 
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -36,7 +38,15 @@ public class Slot {
     @Column(name = "is_available", nullable = false)
     private boolean available;
 
-    @OneToOne(mappedBy = "slot")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "slot_type", nullable = false)
+    private SlotType slotType;
+
+    @Column(name = "price", precision = 10, scale = 2)
+    private BigDecimal price;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reservation_id") // New foreign key column
     private Reservation reservation;
 
     @CreationTimestamp

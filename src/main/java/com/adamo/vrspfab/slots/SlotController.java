@@ -13,6 +13,8 @@ import org.slf4j.Logger; // Import for logging
 import org.slf4j.LoggerFactory; // Import for logging
 
 import java.util.List;
+import java.time.OffsetDateTime; // Import OffsetDateTime
+import java.time.format.DateTimeParseException;
 
 
 @Tag(name = "Slot Management", description = "APIs for managing vehicle slots")
@@ -83,8 +85,14 @@ public class SlotController {
         java.time.LocalDateTime startTime = null;
         java.time.LocalDateTime endTime = null;
         if (start != null && end != null) {
-            startTime = java.time.LocalDateTime.parse(start);
-            endTime = java.time.LocalDateTime.parse(end);
+            try {
+                startTime = OffsetDateTime.parse(start).toLocalDateTime();
+                endTime = OffsetDateTime.parse(end).toLocalDateTime();
+            } catch (DateTimeParseException e) {
+                logger.error("Failed to parse date parameters: start={}, end={}", start, end, e);
+                // Optionally, throw a custom exception or return a bad request status
+                throw new IllegalArgumentException("Invalid date format provided. Please use ISO 8601 format (e.g., 2023-01-01T10:00:00Z).");
+            }
         }
         return ResponseEntity.ok(slotService.getAllSlotsByVehicle(vehicleId, startTime, endTime));
     }
@@ -143,10 +151,25 @@ public class SlotController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Boolean isAvailable,
             @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "DESC") String sortDirection) {
-        logger.info("Received request to get all slots with filters: page={}, size={}, isAvailable={}, sortBy={}, sortDirection={}",
-                page, size, isAvailable, sortBy, sortDirection);
-        Page<SlotDto> slotsPage = slotService.getAllSlots(page, size, isAvailable, sortBy, sortDirection);
+            @RequestParam(defaultValue = "DESC") String sortDirection,
+            @RequestParam(required = false) Long vehicleId, // New filter parameter
+            @RequestParam(required = false) String startDate, // New filter parameter
+            @RequestParam(required = false) String endDate // New filter parameter
+            ) {
+        logger.info("Received request to get all slots with filters: page={}, size={}, isAvailable={}, sortBy={}, sortDirection={}, vehicleId={}, startDate={}, endDate={}",
+                page, size, isAvailable, sortBy, sortDirection, vehicleId, startDate, endDate);
+        java.time.LocalDateTime startDateTime = null;
+        java.time.LocalDateTime endDateTime = null;
+        if (startDate != null && endDate != null) {
+            try {
+                startDateTime = OffsetDateTime.parse(startDate).toLocalDateTime();
+                endDateTime = OffsetDateTime.parse(endDate).toLocalDateTime();
+            } catch (DateTimeParseException e) {
+                logger.error("Failed to parse date parameters: startDate={}, endDate={}", startDate, endDate, e);
+                throw new IllegalArgumentException("Invalid date format provided. Please use ISO 8601 format (e.g., 2023-01-01T10:00:00Z).");
+            }
+        }
+        Page<SlotDto> slotsPage = slotService.getAllSlots(page, size, isAvailable, sortBy, sortDirection, vehicleId, startDateTime, endDateTime);
         return ResponseEntity.ok(slotsPage);
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.lang.NonNull; // Import NonNull annotation
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor; // Import JpaSpecificationExecutor
 
 import java.time.LocalDateTime; // Import for LocalDateTime
 import java.util.List;
@@ -18,7 +19,7 @@ import java.util.Optional;
  * including pagination, eager loading of related entities, and specific lookups.
  */
 @Repository
-public interface SlotRepository extends JpaRepository<Slot, Long> {
+public interface SlotRepository extends JpaRepository<Slot, Long>, JpaSpecificationExecutor<Slot> {
     /**
      * Finds a Slot entity by its ID, eagerly fetching associated Vehicle details.
      *
@@ -62,7 +63,8 @@ public interface SlotRepository extends JpaRepository<Slot, Long> {
      * @return A {@link Page} of Slot entities matching the availability status.
      */
     @EntityGraph(attributePaths = {"vehicle"}, type = EntityGraph.EntityGraphType.LOAD)
-    Page<Slot> findByAvailable(Boolean isAvailable, @NonNull Pageable pageable);
+    // This method is no longer needed as filtering by availability is handled by SlotSpecification
+    // Page<Slot> findByAvailable(Boolean isAvailable, @NonNull Pageable pageable);
 
     /**
      * Finds any overlapping slots for a given vehicle within a specified time range.
@@ -84,9 +86,15 @@ public interface SlotRepository extends JpaRepository<Slot, Long> {
     List<Slot> findByVehicle_Id(Long vehicleId);
 
     /**
-     * Finds all slots for a specific vehicle within a date range.
+     * Finds all available slots for a specific vehicle within a date range.
+     * These are slots that are marked as available and overlap with the provided start and end times.
+     *
+     * @param vehicleId The ID of the vehicle.
+     * @param start The start of the date range.
+     * @param end The end of the date range.
+     * @return A list of available Slot entities that overlap the given range.
      */
     @EntityGraph(attributePaths = {"vehicle", "reservation"}, type = EntityGraph.EntityGraphType.LOAD)
-    @Query("SELECT s FROM Slot s WHERE s.vehicle.id = :vehicleId AND s.startTime >= :start AND s.endTime <= :end")
-    List<Slot> findByVehicleIdAndStartTimeBetween(Long vehicleId, LocalDateTime start, LocalDateTime end);
+    @Query("SELECT s FROM Slot s WHERE s.vehicle.id = :vehicleId AND s.available = true AND s.startTime < :end AND s.endTime > :start")
+    List<Slot> findAvailableSlotsForVehicleAndDateRange(Long vehicleId, LocalDateTime start, LocalDateTime end);
 }
