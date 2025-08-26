@@ -29,12 +29,15 @@ public class VehicleSecurityRules implements SecurityRules {
                 .requestMatchers(HttpMethod.PATCH, "/vehicles/{id}/mileage").hasRole("ADMIN")
                 
                 // Admin-only access for vehicle categories
+                .requestMatchers(HttpMethod.GET, "/admin/vehicle-categories").permitAll() // Allow public access to view categories
                 .requestMatchers("/admin/vehicle-categories/**").hasRole("ADMIN")
                 
                 // Admin-only access for vehicle brands
+                .requestMatchers(HttpMethod.GET, "/admin/vehicle-brands").permitAll() // Allow public access to view brands
                 .requestMatchers("/admin/vehicle-brands/**").hasRole("ADMIN")
                 
                 // Admin-only access for vehicle models
+                .requestMatchers(HttpMethod.GET, "/admin/vehicle-models").permitAll() // Allow public access to view models
                 .requestMatchers("/admin/vehicle-models/**").hasRole("ADMIN");
     }
 }
