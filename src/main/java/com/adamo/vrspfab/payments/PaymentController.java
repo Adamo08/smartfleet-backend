@@ -9,6 +9,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,6 +21,8 @@ import java.time.format.DateTimeFormatter;
 @RequiredArgsConstructor
 @Tag(name = "Payment Management", description = "APIs for processing payments and managing payment-related operations")
 public class PaymentController {
+
+    private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
 
     private final PaymentService paymentService;
     private final RefundService refundService;
@@ -65,6 +69,84 @@ public class PaymentController {
     @PostMapping("/confirm/{sessionId}")
     public ResponseEntity<PaymentResponseDto> confirmPayment(@PathVariable String sessionId) {
         return ResponseEntity.ok(paymentService.confirmPayment(sessionId));
+    }
+
+    @GetMapping("/success")
+    public ResponseEntity<String> paymentSuccess(@RequestParam(required = false) String token, @RequestParam(required = false) String PayerID) {
+        logger.info("=== PAYPAL SUCCESS REDIRECT RECEIVED ===");
+        logger.info("Token: {}", token);
+        logger.info("PayerID: {}", PayerID);
+        logger.info("Request URL: /payments/success");
+        
+        // PayPal redirects here after successful payment
+        // First, capture the payment using the token
+        if (token != null && !token.isEmpty()) {
+            logger.info("Attempting to confirm PayPal payment with token: {}", token);
+            try {
+                // Confirm the PayPal payment using the existing confirmPayment method
+                var response = paymentService.confirmPayment(token);
+                logger.info("Payment confirmation successful: {}", response);
+            } catch (Exception e) {
+                // Log error but continue with redirect
+                logger.error("Error confirming PayPal payment: {}", e.getMessage(), e);
+                System.err.println("Error confirming PayPal payment: " + e.getMessage());
+            }
+        } else {
+            logger.warn("No token received from PayPal - cannot confirm payment");
+        }
+        
+        // Return HTML that automatically redirects to frontend
+        String redirectUrl = "/payments/success?status=success";
+        if (token != null && !token.isEmpty()) {
+            redirectUrl += "&token=" + token;
+        }
+        if (PayerID != null && !PayerID.isEmpty()) {
+            redirectUrl += "&PayerID=" + PayerID;
+        }
+        
+        logger.info("Redirecting to frontend URL: {}", redirectUrl);
+        
+        String html = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Payment Successful</title>
+                <meta http-equiv="refresh" content="0;url=%s">
+            </head>
+            <body>
+                <p>Payment successful! Redirecting to SmartFleet...</p>
+                <script>window.location.href = '%s';</script>
+            </body>
+            </html>
+            """.formatted(redirectUrl, redirectUrl);
+        
+        logger.info("Returning HTML redirect page");
+        return ResponseEntity.ok()
+                .header("Content-Type", "text/html")
+                .body(html);
+    }
+
+    @GetMapping("/cancel")
+    public ResponseEntity<String> paymentCancel() {
+        // PayPal redirects here when payment is cancelled
+        // Return HTML that automatically redirects to frontend
+        String html = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Payment Cancelled</title>
+                <meta http-equiv="refresh" content="0;url=/payments/cancel?status=cancelled">
+            </head>
+            <body>
+                <p>Payment cancelled! Redirecting to SmartFleet...</p>
+                <script>window.location.href = '/payments/cancel?status=cancelled';</script>
+            </body>
+            </html>
+            """;
+        
+        return ResponseEntity.ok()
+                .header("Content-Type", "text/html")
+                .body(html);
     }
 
     @Operation(summary = "Get payment status",
