@@ -10,6 +10,7 @@ import com.adamo.vrspfab.users.Role;
 import com.adamo.vrspfab.users.User;
 import com.adamo.vrspfab.vehicles.VehicleMapper;
 import com.adamo.vrspfab.vehicles.VehicleService;
+import com.adamo.vrspfab.vehicles.Vehicle;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -39,6 +40,9 @@ public class ReservationService {
     private final ReservationMapper reservationMapper;
     private final SlotRepository slotRepository;
     private final SecurityUtilsService securityUtilsService;
+    private final com.adamo.vrspfab.vehicles.VehicleCategoryRepository vehicleCategoryRepository;
+    private final com.adamo.vrspfab.vehicles.VehicleBrandRepository vehicleBrandRepository;
+    private final com.adamo.vrspfab.vehicles.VehicleModelRepository vehicleModelRepository;
 
     /**
      * Creates a new reservation for the currently authenticated user.
@@ -67,7 +71,21 @@ public class ReservationService {
         // Create reservation
         Reservation reservation = reservationMapper.fromCreateRequest(request);
         reservation.setUser(currentUser);
-        reservation.setVehicle(vehicleMapper.toEntity(vehicleDto));
+        
+        // Create vehicle entity and set relationships manually
+        Vehicle vehicleEntity = vehicleMapper.toEntity(vehicleDto);
+        // Set the relationships manually since the mapper ignores them
+        if (vehicleDto.getCategoryId() != null) {
+            vehicleEntity.setCategory(vehicleCategoryRepository.findById(vehicleDto.getCategoryId()).orElse(null));
+        }
+        if (vehicleDto.getBrandId() != null) {
+            vehicleEntity.setBrand(vehicleBrandRepository.findById(vehicleDto.getBrandId()).orElse(null));
+        }
+        if (vehicleDto.getModelId() != null) {
+            vehicleEntity.setModel(vehicleModelRepository.findById(vehicleDto.getModelId()).orElse(null));
+        }
+        
+        reservation.setVehicle(vehicleEntity);
         reservation.setStatus(ReservationStatus.PENDING);
         
         // Save reservation

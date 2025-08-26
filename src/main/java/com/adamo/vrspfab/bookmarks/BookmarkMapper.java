@@ -22,8 +22,8 @@ public interface BookmarkMapper {
     @Mapping(target = "vehicleModel", source = "reservation.vehicle.model.name")
     BookmarkDto toDto(Bookmark bookmark);
 
-    @Mapping(target = "user.id", source = "userId")
-    @Mapping(target = "reservation.id", source = "reservationId")
+    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "reservation", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     Bookmark toEntity(BookmarkDto bookmarkDTO);

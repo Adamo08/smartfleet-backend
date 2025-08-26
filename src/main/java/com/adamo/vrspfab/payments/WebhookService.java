@@ -25,6 +25,7 @@ public class WebhookService {
     private final PaypalPaymentProvider paypalPaymentProvider;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
 
     @Value("${paypal.api.baseUrl}")
     private String paypalBaseUrl;
@@ -117,7 +118,18 @@ public class WebhookService {
             log.info("Updating payment {} from {} to {}", payment.getId(), payment.getStatus(), newStatus);
             payment.setStatus(newStatus);
             paymentRepository.save(payment);
-            // Here we could trigger other business logic, like sending a confirmation email.
+            
+            // Fire payment completed event if payment is completed
+            if (newStatus == PaymentStatus.COMPLETED) {
+                applicationEventPublisher.publishEvent(new PaymentCompletedEvent(
+                        this, 
+                        payment.getId(), 
+                        payment.getReservation().getId(), 
+                        transactionId, 
+                        PaymentStatus.COMPLETED
+                ));
+                log.info("Fired payment completed event for payment {}", payment.getId());
+            }
         } else {
             log.info("Payment {} already has status {}. No update needed.", payment.getId(), newStatus);
         }

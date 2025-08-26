@@ -14,8 +14,8 @@ public interface TestimonialMapper {
     @Mapping(target = "vehicleModel", source = "vehicle.model.name")
     TestimonialDto toDto(Testimonial testimonial);
 
-    @Mapping(target = "user.id", source = "userId")
-    @Mapping(target = "vehicle.id", source = "vehicleId")
+    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "vehicle", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "approved", ignore = true)

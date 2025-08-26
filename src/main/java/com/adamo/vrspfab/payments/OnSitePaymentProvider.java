@@ -3,6 +3,7 @@ package com.adamo.vrspfab.payments;
 import com.adamo.vrspfab.reservations.Reservation;
 import com.adamo.vrspfab.reservations.ReservationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ public class OnSitePaymentProvider implements PaymentProvider {
     private final PaymentRepository paymentRepository;
     private final ReservationRepository reservationRepository;
     private final RefundRepository refundRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     @Transactional
@@ -37,6 +39,15 @@ public class OnSitePaymentProvider implements PaymentProvider {
         payment.setTransactionId(transactionRef);
         payment.setStatus(PaymentStatus.COMPLETED);
         paymentRepository.save(payment);
+
+        // Fire payment completed event to trigger business logic
+        applicationEventPublisher.publishEvent(new PaymentCompletedEvent(
+                this, 
+                payment.getId(), 
+                payment.getReservation().getId(), 
+                transactionRef, 
+                PaymentStatus.COMPLETED
+        ));
 
         return new PaymentResponseDto(payment.getId(), transactionRef, payment.getStatus().name(), null);
     }

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,7 @@ public class PaypalPaymentProvider implements PaymentProvider {
     private final ReservationRepository reservationRepository;
     private final RefundRepository refundRepository;
     private final RestTemplate restTemplate;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Value("${paypal.api.baseUrl}")
     private String paypalBaseUrl;
@@ -98,6 +100,15 @@ public class PaypalPaymentProvider implements PaymentProvider {
                 payment.setCaptureId(captureId);
             }
             paymentRepository.save(payment);
+
+            // Fire payment completed event to trigger business logic
+            applicationEventPublisher.publishEvent(new PaymentCompletedEvent(
+                    this, 
+                    payment.getId(), 
+                    payment.getReservation().getId(), 
+                    captureId != null ? captureId : orderId, 
+                    PaymentStatus.COMPLETED
+            ));
 
             return new PaymentResponseDto(payment.getId(), capturedOrder.getId(), "COMPLETED", null);
 

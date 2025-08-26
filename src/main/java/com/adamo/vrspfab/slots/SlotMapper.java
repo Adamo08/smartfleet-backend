@@ -11,7 +11,7 @@ public interface SlotMapper {
     @Mapping(target = "vehicleModel", source = "vehicle.model.name")
     SlotDto toDto(Slot slot);
 
-    @Mapping(target = "vehicle.id", source = "vehicleId")
+    @Mapping(target = "vehicle", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     Slot toEntity(SlotDto slotDTO);

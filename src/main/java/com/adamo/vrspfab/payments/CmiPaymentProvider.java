@@ -3,6 +3,7 @@ package com.adamo.vrspfab.payments;
 import com.adamo.vrspfab.reservations.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -23,6 +24,7 @@ public class CmiPaymentProvider implements PaymentProvider {
     private final ReservationRepository reservationRepository;
     private final RefundRepository refundRepository;
     private final RestTemplate restTemplate;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Value("${cmi.api.baseUrl:https://example-cmi}" )
     private String cmiBaseUrl;
@@ -57,6 +59,16 @@ public class CmiPaymentProvider implements PaymentProvider {
 
         payment.setStatus(PaymentStatus.COMPLETED);
         paymentRepository.save(payment);
+
+        // Fire payment completed event to trigger business logic
+        applicationEventPublisher.publishEvent(new PaymentCompletedEvent(
+                this, 
+                payment.getId(), 
+                payment.getReservation().getId(), 
+                payment.getTransactionId(), 
+                PaymentStatus.COMPLETED
+        ));
+
         return new PaymentResponseDto(payment.getId(), payment.getTransactionId(), payment.getStatus().name(), null);
     }
 

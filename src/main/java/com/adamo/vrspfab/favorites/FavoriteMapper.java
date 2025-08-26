@@ -14,8 +14,8 @@ public interface FavoriteMapper {
     @Mapping(target = "vehicleModel", source = "vehicle.model.name")
     FavoriteDto toDto(Favorite favorite);
 
-    @Mapping(target = "user.id", source = "userId")
-    @Mapping(target = "vehicle.id", source = "vehicleId")
+    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "vehicle", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     Favorite toEntity(FavoriteDto favoriteDTO);
