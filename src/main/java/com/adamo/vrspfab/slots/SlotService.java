@@ -18,7 +18,9 @@ import org.springframework.security.access.AccessDeniedException; // Import for 
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
+import com.adamo.vrspfab.vehicles.Vehicle;
 
 @AllArgsConstructor
 @Service
@@ -31,17 +33,20 @@ public class SlotService {
     private final VehicleService vehicleService;
     private final SecurityUtilsService securityUtilsService; // Inject SecurityUtilsService
     private final VehicleMapper vehicleMapper;
+    private final DynamicSlotService dynamicSlotService;
     
     @Transactional(readOnly = true)
     public List<SlotDto> getAllSlotsByVehicle(Long vehicleId, LocalDateTime start, LocalDateTime end) {
-        // Public endpoint to power booking UI: returns all slots for a vehicle, optionally filtered by range
-        List<Slot> slots;
+        // Use dynamic slot generation instead of pre-created slots
+        Vehicle vehicle = vehicleMapper.toEntity(vehicleService.getVehicleById(vehicleId));
+        
         if (start != null && end != null) {
-            slots = slotRepository.findByVehicleIdAndStartTimeBetween(vehicleId, start, end);
+            // Generate slots dynamically for the requested date range
+            return dynamicSlotService.generateAvailableSlots(vehicle, start, end);
         } else {
-            slots = slotRepository.findByVehicle_Id(vehicleId);
+            // For no date range, return empty list since we don't have pre-created slots
+            return new ArrayList<>();
         }
-        return slots.stream().map(slotMapper::toDto).collect(Collectors.toList());
     }
 
     @Transactional
@@ -172,9 +177,10 @@ public class SlotService {
     }
 
     @Transactional(readOnly = true)
-    public Page<SlotDto> getAllSlots(int page, int size, Boolean isAvailable, String sortBy, String sortDirection) {
-        logger.debug("Fetching all slots with filters: page={}, size={}, isAvailable={}, sortBy={}, sortDirection={}",
-                page, size, isAvailable, sortBy, sortDirection);
+    public Page<SlotDto> getAllSlots(int page, int size, Boolean isAvailable, String sortBy, String sortDirection, 
+                                     Long vehicleId, LocalDateTime startDateTime, LocalDateTime endDateTime) {
+        logger.debug("Fetching all slots with filters: page={}, size={}, isAvailable={}, sortBy={}, sortDirection={}, vehicleId={}, startDateTime={}, endDateTime={}",
+                page, size, isAvailable, sortBy, sortDirection, vehicleId, startDateTime, endDateTime);
 
         // Security check: Only ADMIN can view all slots (with or without availability filter)
         if (!securityUtilsService.getCurrentAuthenticatedUser().getRole().equals(Role.ADMIN)) {
@@ -185,13 +191,9 @@ public class SlotService {
         Sort.Direction direction = Sort.Direction.fromString(sortDirection.toUpperCase());
         Sort sort = Sort.by(direction, sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
-        Page<Slot> slotsPage;
-
-        if (isAvailable != null) {
-            slotsPage = slotRepository.findByAvailable(isAvailable, pageable);
-        } else {
-            slotsPage = slotRepository.findAll(pageable);
-        }
+        
+        SlotSpecification spec = new SlotSpecification(vehicleId, isAvailable, startDateTime, endDateTime);
+        Page<Slot> slotsPage = slotRepository.findAll(spec, pageable);
 
         logger.debug("Fetched {} slots for page {} with size {}. Total elements: {}",
                 slotsPage.getNumberOfElements(), page, size, slotsPage.getTotalElements());

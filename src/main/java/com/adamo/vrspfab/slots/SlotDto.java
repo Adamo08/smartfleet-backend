@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import com.adamo.vrspfab.slots.SlotType;
 
 @Setter
 @Getter
@@ -24,6 +26,10 @@ public class SlotDto {
     private LocalDateTime endTime;
 
     private boolean available;
+    
+    private SlotType slotType;
+    
+    private BigDecimal price;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
