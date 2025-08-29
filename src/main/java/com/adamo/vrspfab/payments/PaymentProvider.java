@@ -42,6 +42,10 @@ public interface PaymentProvider {
      */
     RefundResponseDto processRefund(RefundRequestDto requestDto);
 
+    /**
+     * Check if a payment can be processed for a reservation
+     */
+    boolean canProcessPayment(Long reservationId);
 
     /**
      * Returns the name of the payment provider.

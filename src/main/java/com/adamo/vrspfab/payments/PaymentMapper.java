@@ -24,6 +24,7 @@ public interface PaymentMapper {
     @Mapping(target = "userEmail", source = "reservation.user.email")
     PaymentDetailsDto toPaymentDetailsDto(Payment payment);
 
+
     @Mapping(target = "id", source = "id")
     @Mapping(target = "reservationId", source = "reservation.id")
     @Mapping(target = "amount", source = "amount")

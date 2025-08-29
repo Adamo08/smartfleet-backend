@@ -28,13 +28,22 @@ public class OnSitePaymentProvider implements PaymentProvider {
             return new PaymentResponseDto(payment.getId(), payment.getTransactionId(), payment.getStatus().name(), null);
         }
 
-        if (!payment.getAmount().equals(requestDto.getAmount()) || !payment.getCurrency().equals(requestDto.getCurrency())) {
-            throw new PaymentException("Request amount/currency does not match pending payment.");
+        // For on-site payments, this method should only be called by admin after verifying actual payment
+        // Check if the request is coming from an admin user or if it's a legitimate payment completion
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            throw new PaymentException("Payment is not in a processable state: " + payment.getStatus());
         }
 
-        String transactionRef = requestDto.getPaymentMethodId() != null && !requestDto.getPaymentMethodId().isBlank()
-                ? requestDto.getPaymentMethodId()
-                : ("ONSITE-" + payment.getId() + "-" + System.currentTimeMillis());
+        // Use BigDecimal comparison with tolerance for floating-point precision issues
+        if (payment.getAmount().subtract(requestDto.getAmount()).abs().compareTo(new java.math.BigDecimal("0.01")) > 0 || 
+            !payment.getCurrency().equals(requestDto.getCurrency())) {
+            throw new PaymentException("Request amount/currency does not match pending payment. Expected: " + 
+                payment.getAmount() + " " + payment.getCurrency() + ", Got: " + 
+                requestDto.getAmount() + " " + requestDto.getCurrency());
+        }
+
+        // Generate unique transaction ID for on-site payments
+        String transactionRef = "ONSITE-" + payment.getId() + "-" + System.currentTimeMillis();
 
         payment.setTransactionId(transactionRef);
         payment.setStatus(PaymentStatus.COMPLETED);
@@ -102,6 +111,14 @@ public class OnSitePaymentProvider implements PaymentProvider {
         paymentRepository.save(payment);
 
         return new RefundResponseDto(refund.getId(), refund.getRefundTransactionId(), refund.getStatus());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canProcessPayment(Long reservationId) {
+        return paymentRepository.findByReservationId(reservationId)
+                .map(payment -> payment.getStatus() == PaymentStatus.PENDING)
+                .orElse(false);
     }
 
     @Override

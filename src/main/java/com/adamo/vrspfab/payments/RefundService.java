@@ -1,6 +1,7 @@
 package com.adamo.vrspfab.payments;
 
 import com.adamo.vrspfab.common.SecurityUtilsService;
+import com.adamo.vrspfab.dashboard.ActivityEventListener;
 import com.adamo.vrspfab.reservations.Reservation;
 import com.adamo.vrspfab.reservations.ReservationNotFoundException;
 import com.adamo.vrspfab.reservations.ReservationRepository;
@@ -15,6 +16,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Slf4j
 @Service
@@ -27,6 +30,7 @@ public class RefundService {
     private final PaymentRepository paymentRepository;
     private final ReservationRepository reservationRepository;
     private final SecurityUtilsService securityUtilsService;
+    private final ActivityEventListener activityEventListener;
     private final com.adamo.vrspfab.notifications.NotificationService notificationService;
 
     /**
@@ -48,6 +52,34 @@ public class RefundService {
                 .orElseThrow(() -> new PaymentException("Provider not found for payment: " + payment.getId()));
 
         RefundResponseDto response = provider.processRefund(requestDto);
+        
+        // Record refund activity
+        try {
+            User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+            String description = String.format("Refund of %s %s processed for payment #%d", 
+                    requestDto.getAmount(), payment.getCurrency(), payment.getId());
+            String title = response.getStatus() == RefundStatus.PROCESSED ? "Refund Processed" : "Refund Failed";
+            
+            java.util.Map<String, Object> metadata = java.util.Map.of(
+                    "refundId", response.getRefundRecordId(),
+                    "paymentId", payment.getId(),
+                    "amount", requestDto.getAmount(),
+                    "currency", payment.getCurrency(),
+                    "reason", requestDto.getReason() != null ? requestDto.getReason() : "No reason provided",
+                    "provider", payment.getProvider()
+            );
+            
+            activityEventListener.recordRefundActivity(
+                    title,
+                    description,
+                    currentUser,
+                    response.getRefundRecordId(),
+                    metadata
+            );
+        } catch (Exception e) {
+            log.warn("Could not record refund activity: {}", e.getMessage());
+        }
+        
         // Notify user of refund outcome (non-blocking)
         try {
             var user = payment.getReservation().getUser();
@@ -94,16 +126,74 @@ public class RefundService {
     @Transactional(readOnly = true)
     public Page<RefundDetailsDto> getRefundHistory(Pageable pageable) {
         User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
-        // Fetch refunds via payments owned by user; simple approach: query all refunds and filter by ownership
-        // For efficiency, consider a custom query. Here we map and filter.
-        return refundRepository.findAll(pageable)
-                .map(refund -> {
-                    if (!refund.getPayment().getReservation().getUser().getId().equals(currentUser.getId())
-                            && currentUser.getRole() != Role.ADMIN) {
-                        throw new AccessDeniedException("You do not own this refund record.");
-                    }
-                    return refundMapper.toRefundDetailsDto(refund);
-                });
+        
+        if (currentUser.getRole() == Role.ADMIN) {
+            // Admins can see all refunds
+            return refundRepository.findAll(pageable)
+                    .map(refundMapper::toRefundDetailsDto);
+        } else {
+            // Regular users only see their own refunds
+            return refundRepository.findByUserId(currentUser.getId(), pageable)
+                    .map(refundMapper::toRefundDetailsDto);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RefundDetailsDto> getRefundHistoryWithFilters(
+            Pageable pageable, 
+            Long paymentId, 
+            String status,
+            java.math.BigDecimal minAmount,
+            java.math.BigDecimal maxAmount,
+            String startDate,
+            String endDate,
+            String searchTerm) {
+        
+        User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+        
+        // Only admins can use filters for now
+        if (currentUser.getRole() != Role.ADMIN) {
+            return getRefundHistory(pageable);
+        }
+        
+        RefundStatus refundStatus = null;
+        if (status != null && !status.isEmpty()) {
+            try {
+                refundStatus = RefundStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Invalid status, ignore
+            }
+        }
+        
+        LocalDateTime startDateTime = null;
+        LocalDateTime endDateTime = null;
+        
+        if (startDate != null && !startDate.isEmpty()) {
+            try {
+                startDateTime = LocalDate.parse(startDate).atStartOfDay();
+            } catch (Exception e) {
+                // Invalid date, ignore
+            }
+        }
+        
+        if (endDate != null && !endDate.isEmpty()) {
+            try {
+                endDateTime = LocalDate.parse(endDate).atTime(23, 59, 59);
+            } catch (Exception e) {
+                // Invalid date, ignore  
+            }
+        }
+        
+        return refundRepository.findAllWithFilters(
+                paymentId,
+                refundStatus,
+                minAmount,
+                maxAmount,
+                startDateTime,
+                endDateTime,
+                searchTerm,
+                pageable
+        ).map(refundMapper::toRefundDetailsDto);
     }
 
 

@@ -8,17 +8,23 @@ import com.adamo.vrspfab.users.Role;
 import com.adamo.vrspfab.users.User;
 import com.github.benmanes.caffeine.cache.Cache;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.math.BigDecimal;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentService {
 
     private final PaymentProviderFactory providerFactory;
@@ -82,6 +88,105 @@ public class PaymentService {
             idempotencyCache.put(idempotencyKey, response);
         }
         return response;
+    }
+
+    @Transactional
+    public PaymentResponseDto processExistingPayment(Long reservationId, String idempotencyKey) {
+        validateOwnership(reservationId);
+        
+        Payment existingPayment = paymentRepository.findByReservationId(reservationId)
+                .orElseThrow(() -> new PaymentException("No payment found for reservation: " + reservationId));
+        
+        if (existingPayment.getStatus() == PaymentStatus.COMPLETED) {
+            return new PaymentResponseDto(existingPayment.getId(), existingPayment.getTransactionId(), existingPayment.getStatus().name(), null);
+        }
+        
+        if (existingPayment.getStatus() != PaymentStatus.PENDING) {
+            throw new PaymentException("Payment is not in a processable state: " + existingPayment.getStatus());
+        }
+        
+        // Prevent users from processing on-site payments - only admins can complete them
+        if ("onSitePaymentProvider".equals(existingPayment.getProvider())) {
+            throw new PaymentException("On-site payments can only be completed by administrators after verifying payment at the location");
+        }
+        
+        PaymentProvider provider = providerFactory.getProvider(existingPayment.getProvider())
+                .orElseThrow(() -> new PaymentException("Invalid payment provider: " + existingPayment.getProvider()));
+        
+        // Create a request DTO from the existing payment, preserving the original payment method
+        PaymentRequestDto requestDto = new PaymentRequestDto();
+        requestDto.setReservationId(existingPayment.getReservation().getId());
+        requestDto.setAmount(existingPayment.getAmount());
+        requestDto.setCurrency(existingPayment.getCurrency());
+        
+        // Map provider to payment method ID (e.g., "onSitePaymentProvider" -> "onsite")
+        String paymentMethodId = mapProviderToPaymentMethodId(existingPayment.getProvider());
+        requestDto.setPaymentMethodId(paymentMethodId);
+        requestDto.setProviderName(existingPayment.getProvider());
+        
+        return provider.processPayment(requestDto);
+    }
+
+    /**
+     * Admin method to complete on-site payments after verifying actual payment
+     * This should only be called by admin users after verifying payment at location
+     */
+    @Transactional
+    public PaymentResponseDto completeOnsitePayment(Long reservationId, String adminNotes) {
+        // Validate admin privileges
+        User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new PaymentException("Only administrators can complete on-site payments");
+        }
+        
+        Payment existingPayment = paymentRepository.findByReservationId(reservationId)
+                .orElseThrow(() -> new PaymentException("No payment found for reservation: " + reservationId));
+        
+        if (existingPayment.getStatus() == PaymentStatus.COMPLETED) {
+            return new PaymentResponseDto(existingPayment.getId(), existingPayment.getTransactionId(), existingPayment.getStatus().name(), null);
+        }
+        
+        if (existingPayment.getStatus() != PaymentStatus.PENDING) {
+            throw new PaymentException("Payment is not in a processable state: " + existingPayment.getStatus());
+        }
+        
+        if (!"onSitePaymentProvider".equals(existingPayment.getProvider())) {
+            throw new PaymentException("Only on-site payments can be completed via this method");
+        }
+        
+        // Create a request DTO for the payment provider
+        PaymentRequestDto requestDto = new PaymentRequestDto();
+        requestDto.setReservationId(existingPayment.getReservation().getId());
+        requestDto.setAmount(existingPayment.getAmount());
+        requestDto.setCurrency(existingPayment.getCurrency());
+        requestDto.setPaymentMethodId("onsite");
+        requestDto.setProviderName(existingPayment.getProvider());
+        
+        // Process the payment through the provider
+        PaymentProvider provider = providerFactory.getProvider(existingPayment.getProvider())
+                .orElseThrow(() -> new PaymentException("Invalid payment provider: " + existingPayment.getProvider()));
+        
+        PaymentResponseDto response = provider.processPayment(requestDto);
+        
+        // Log admin action
+        log.info("Admin {} completed on-site payment for reservation {} with notes: {}", 
+                currentUser.getId(), reservationId, adminNotes);
+        
+        return response;
+    }
+
+    /**
+     * Map provider name to payment method ID
+     */
+    private String mapProviderToPaymentMethodId(String providerName) {
+        switch (providerName) {
+            case "onSitePaymentProvider":
+                return "onsite";
+            case "paypalPaymentProvider":
+                return "paypal";
+            default:
+                return providerName; // Fallback to provider name if unknown
+        }
     }
 
     @Transactional
@@ -154,6 +259,12 @@ public class PaymentService {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new PaymentException("Payment not found with ID: " + paymentId));
         return paymentMapper.toPaymentDto(payment);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<PaymentDto> getExistingPayment(Long reservationId) {
+        return paymentRepository.findByReservationId(reservationId)
+                .map(paymentMapper::toPaymentDto);
     }
 
     @Transactional(readOnly = true)
@@ -269,6 +380,40 @@ public class PaymentService {
     }
 
     @Transactional(readOnly = true)
+    public Map<String, Long> getPaymentMethodStatistics() {
+        List<Payment> allPayments = paymentRepository.findByStatus(PaymentStatus.COMPLETED);
+        
+        Map<String, Long> methodStats = new HashMap<>();
+        methodStats.put("PayPal", 0L);
+        methodStats.put("On-site", 0L);
+        
+        for (Payment payment : allPayments) {
+            String providerName = payment.getProvider();
+            if (providerName != null) {
+                switch (providerName.toLowerCase()) {
+                    case "paypal":
+                    case "paypalpaymentprovider":
+                        methodStats.put("PayPal", methodStats.get("PayPal") + 1);
+                        break;
+                    case "onsite":
+                    case "onsitepaymentprovider":
+                        methodStats.put("On-site", methodStats.get("On-site") + 1);
+                        break;
+                    default:
+                        // For any unknown providers, count as On-site for now
+                        methodStats.put("On-site", methodStats.get("On-site") + 1);
+                        break;
+                }
+            } else {
+                // If no provider specified, assume On-site
+                methodStats.put("On-site", methodStats.get("On-site") + 1);
+            }
+        }
+        
+        return methodStats;
+    }
+
+    @Transactional(readOnly = true)
     public PaymentMethodsDto getPaymentMethods() {
         List<PaymentMethodsDto.PaymentMethodDto> methods = List.of(
                 PaymentMethodsDto.PaymentMethodDto.builder()
@@ -276,13 +421,6 @@ public class PaymentService {
                         .name("PayPal")
                         .description("Pay with your PayPal account")
                         .icon("paypal")
-                        .isActive(true)
-                        .build(),
-                PaymentMethodsDto.PaymentMethodDto.builder()
-                        .id("cmi")
-                        .name("CMI")
-                        .description("Pay securely with your card via CMI")
-                        .icon("credit-card")
                         .isActive(true)
                         .build(),
                 PaymentMethodsDto.PaymentMethodDto.builder()
@@ -301,7 +439,7 @@ public class PaymentService {
 
     @Transactional(readOnly = true)
     public PaymentMethodValidationDto validatePaymentMethod(String methodId) {
-        boolean isValid = List.of("paypal", "cmi", "onsite").contains(methodId);
+        boolean isValid = List.of("paypal", "onsite").contains(methodId);
         String message = isValid ? "Payment method is valid" : "Payment method not supported";
         
         return PaymentMethodValidationDto.builder()
@@ -310,6 +448,10 @@ public class PaymentService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public boolean hasExistingPayment(Long reservationId) {
+        return paymentRepository.findByReservationId(reservationId).isPresent();
+    }
 
 
     /**

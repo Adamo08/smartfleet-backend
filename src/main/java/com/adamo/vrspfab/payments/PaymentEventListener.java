@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 
 /**
  * Event listener for payment-related events.
@@ -81,6 +82,26 @@ public class PaymentEventListener {
             LocalDateTime startTime = reservation.getStartDate();
             LocalDateTime endTime = reservation.getEndDate();
 
+            log.info("Creating slot for reservation {} - Vehicle: {}, Start: {}, End: {}", 
+                    reservation.getId(), vehicle.getId(), startTime, endTime);
+
+            // Validate slot data
+            if (vehicle == null) {
+                log.error("Cannot create slot for reservation {} - vehicle is null", reservation.getId());
+                return;
+            }
+            
+            if (startTime == null || endTime == null) {
+                log.error("Cannot create slot for reservation {} - start or end time is null", reservation.getId());
+                return;
+            }
+            
+            if (startTime.isAfter(endTime)) {
+                log.error("Cannot create slot for reservation {} - start time {} is after end time {}", 
+                        reservation.getId(), startTime, endTime);
+                return;
+            }
+
             // Create a slot for the reservation period
             Slot slot = new Slot();
             slot.setVehicle(vehicle);
@@ -91,16 +112,29 @@ public class PaymentEventListener {
             slot.setPrice(calculateSlotPrice(vehicle, startTime, endTime));
             slot.setReservation(reservation);
 
-            // Save the slot
+            // Save the slot first
             Slot savedSlot = slotRepository.save(slot);
-            log.info("Created slot {} for reservation {}", savedSlot.getId(), reservation.getId());
+            log.info("Successfully created slot {} for reservation {} - Type: {}, Price: {}", 
+                    savedSlot.getId(), reservation.getId(), savedSlot.getSlotType(), savedSlot.getPrice());
 
-            // Add the slot to the reservation
-            reservation.getSlots().add(savedSlot);
-            reservationRepository.save(reservation);
+            // Add the slot to the reservation's collection
+            if (reservation.getSlots() != null) {
+                reservation.getSlots().add(savedSlot);
+            } else {
+                log.warn("Reservation {} slots collection is null, initializing", reservation.getId());
+                reservation.setSlots(new HashSet<>());
+                reservation.getSlots().add(savedSlot);
+            }
+
+            // Save the updated reservation
+            Reservation updatedReservation = reservationRepository.save(reservation);
+            log.info("Successfully associated slot {} with reservation {} - Total slots: {}", 
+                    savedSlot.getId(), updatedReservation.getId(), 
+                    updatedReservation.getSlots() != null ? updatedReservation.getSlots().size() : 0);
 
         } catch (Exception e) {
             log.error("Error creating slots for reservation {}: {}", reservation.getId(), e.getMessage(), e);
+            // Don't re-throw the exception to avoid breaking the payment completion process
         }
     }
 

@@ -45,7 +45,7 @@ public class Payment {
     private String captureId;
 
     @Column(name = "provider", nullable = false, length = 50)
-    private String provider; // e.g., "cmiPaymentProvider", "paypalPaymentProvider"
+    private String provider; // e.g., "paypalPaymentProvider", "onSitePaymentProvider"
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -53,8 +53,6 @@ public class Payment {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @OneToOne(mappedBy = "payment", cascade = CascadeType.ALL)
-    private PaymentInfo paymentInfo;
 
     @PrePersist
     protected void onCreate() {

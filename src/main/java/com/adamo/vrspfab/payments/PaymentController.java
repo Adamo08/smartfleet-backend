@@ -11,10 +11,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/payments")
@@ -278,14 +282,30 @@ public class PaymentController {
     }
 
     @Operation(summary = "Get refund history",
-               description = "Retrieves a paginated list of all refunds.",
+               description = "Retrieves a paginated list of refunds with optional filtering.",
                responses = {
                        @ApiResponse(responseCode = "200", description = "Refund history retrieved successfully"),
                        @ApiResponse(responseCode = "401", description = "Unauthorized"),
                        @ApiResponse(responseCode = "500", description = "Internal server error")
                })
     @GetMapping("/refunds")
-    public ResponseEntity<Page<RefundDetailsDto>> getRefundHistory(Pageable pageable) {
+    public ResponseEntity<Page<RefundDetailsDto>> getRefundHistory(
+            Pageable pageable,
+            @RequestParam(required = false) Long paymentId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) java.math.BigDecimal minAmount,
+            @RequestParam(required = false) java.math.BigDecimal maxAmount,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) String searchTerm) {
+        
+        // If any filters are provided, use the filtered method
+        if (paymentId != null || status != null || minAmount != null || maxAmount != null 
+            || startDate != null || endDate != null || searchTerm != null) {
+            return ResponseEntity.ok(refundService.getRefundHistoryWithFilters(
+                pageable, paymentId, status, minAmount, maxAmount, startDate, endDate, searchTerm));
+        }
+        
         return ResponseEntity.ok(refundService.getRefundHistory(pageable));
     }
 
@@ -351,6 +371,20 @@ public class PaymentController {
     public ResponseEntity<PaymentMethodValidationDto> validatePaymentMethod(@PathVariable String methodId) {
         return ResponseEntity.ok(paymentService.validatePaymentMethod(methodId));
     }
+    
+    @Operation(summary = "Get payment method statistics",
+               description = "Retrieves statistics showing payment distribution by method for analytics.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Payment method statistics retrieved successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, admin access required"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/method-stats")
+    public ResponseEntity<Map<String, Long>> getPaymentMethodStatistics() {
+        return ResponseEntity.ok(paymentService.getPaymentMethodStatistics());
+    }
 
     @Operation(summary = "Get all payments (Admin only)",
             description = "Retrieves a paginated and filtered list of all payments in the system. Requires admin privileges.",
@@ -402,5 +436,38 @@ public class PaymentController {
     public ResponseEntity<Void> deletePaymentAdmin(@PathVariable Long paymentId) {
         paymentService.deletePayment(paymentId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/exists/{reservationId}")
+    public ResponseEntity<Map<String, Object>> checkPaymentExists(@PathVariable Long reservationId) {
+        boolean exists = paymentService.hasExistingPayment(reservationId);
+        Optional<PaymentDto> existingPayment = paymentService.getExistingPayment(reservationId);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("exists", exists);
+        response.put("payment", existingPayment.orElse(null));
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/process-existing/{reservationId}")
+    public ResponseEntity<PaymentResponseDto> processExistingPayment(
+            @PathVariable Long reservationId,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return ResponseEntity.ok(paymentService.processExistingPayment(reservationId, idempotencyKey));
+    }
+
+    /**
+     * Admin endpoint to complete on-site payments after verifying actual payment
+     * This should only be accessible to admin users
+     */
+    @PostMapping("/admin/complete-onsite/{reservationId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<PaymentResponseDto> completeOnsitePayment(
+            @PathVariable Long reservationId,
+            @RequestParam(required = false) String adminNotes) {
+        
+        PaymentResponseDto response = paymentService.completeOnsitePayment(reservationId, adminNotes);
+        return ResponseEntity.ok(response);
     }
 }

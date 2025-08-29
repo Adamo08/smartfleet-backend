@@ -22,7 +22,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long>, JpaSpec
 
     Optional<Payment> findByReservationId(Long reservationId);
 
-    @EntityGraph(attributePaths = {"reservation", "paymentInfo"})
+    @EntityGraph(attributePaths = {"reservation"})
     Optional<Payment> findWithDetailsById(Long paymentId);
 
     Optional<Payment> findByTransactionId(String transactionId);
@@ -46,4 +46,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long>, JpaSpec
 
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.status = :status")
     Optional<BigDecimal> sumAmountByStatus(@Param("status") PaymentStatus status);
+
+    List<Payment> findByStatus(PaymentStatus status);
 }

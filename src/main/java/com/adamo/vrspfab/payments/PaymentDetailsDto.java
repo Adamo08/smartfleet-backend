@@ -25,5 +25,4 @@ public class PaymentDetailsDto {
     private Long reservationId;
     private Long userId;
     private String userEmail;
-    // Next we'll add more attrs if needed, e.g., from PaymentInfo
 }

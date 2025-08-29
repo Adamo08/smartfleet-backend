@@ -428,6 +428,14 @@ public class PaypalPaymentProvider implements PaymentProvider {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canProcessPayment(Long reservationId) {
+        return paymentRepository.findByReservationId(reservationId)
+                .map(payment -> payment.getStatus() == PaymentStatus.PENDING)
+                .orElse(false);
+    }
+
 
     String getAccessToken() {
         if (accessToken == null || LocalDateTime.now().isAfter(tokenExpiryTime)) {
