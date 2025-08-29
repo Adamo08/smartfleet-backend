@@ -1,4 +1,4 @@
-package com.adamo.vrspfab.vehicles;
+package com.adamo.vrspfab.vehicles.exceptions;
 
 /**
  * Custom exception to be thrown when an operation is attempted on a vehicle

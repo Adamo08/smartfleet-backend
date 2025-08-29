@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -61,4 +62,31 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long>, JpaSpec
      * @return the number of vehicles with the given status
      */
     Long countByStatus(VehicleStatus status);
+
+    /**
+     * Gets vehicle utilization data by category for dashboard analytics.
+     *
+     * @return List of Object arrays containing [categoryName, totalVehicles, reservedVehicles]
+     */
+    @Query("SELECT c.name, COUNT(v), COALESCE(COUNT(r), 0) " +
+           "FROM Vehicle v " +
+           "JOIN v.category c " +
+           "LEFT JOIN Reservation r ON r.vehicle.id = v.id AND r.status = 'CONFIRMED' AND r.endDate > CURRENT_TIMESTAMP " +
+           "GROUP BY c.name")
+    List<Object[]> getVehicleUtilizationByCategory();
+
+    /**
+     * Find vehicles by brand ID
+     */
+    List<Vehicle> findByBrandId(Long brandId);
+
+    /**
+     * Find vehicles by category ID
+     */
+    List<Vehicle> findByCategoryId(Long categoryId);
+
+    /**
+     * Find vehicles by model ID
+     */
+    List<Vehicle> findByModelId(Long modelId);
 }

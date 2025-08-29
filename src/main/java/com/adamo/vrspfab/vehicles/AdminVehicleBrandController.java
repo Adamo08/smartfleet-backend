@@ -1,5 +1,8 @@
 package com.adamo.vrspfab.vehicles;
 
+import com.adamo.vrspfab.vehicles.dto.CreateVehicleBrandDto;
+import com.adamo.vrspfab.vehicles.dto.UpdateVehicleBrandDto;
+import com.adamo.vrspfab.vehicles.dto.VehicleBrandResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,9 +35,9 @@ public class AdminVehicleBrandController {
                        @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges"),
                        @ApiResponse(responseCode = "500", description = "Internal server error")
                })
-    public ResponseEntity<Page<VehicleBrandDto>> getAllBrands(Pageable pageable) {
+    public ResponseEntity<Page<VehicleBrandResponseDto>> getAllBrands(Pageable pageable) {
         log.info("Admin requested all vehicle brands with pagination. Page: {}, Size: {}", pageable.getPageNumber(), pageable.getPageSize());
-        Page<VehicleBrandDto> brands = brandService.getAllBrands(pageable);
+        Page<VehicleBrandResponseDto> brands = brandService.getAllBrands(pageable);
         return ResponseEntity.ok(brands);
     }
     
@@ -48,9 +51,9 @@ public class AdminVehicleBrandController {
                        @ApiResponse(responseCode = "404", description = "Brand not found"),
                        @ApiResponse(responseCode = "500", description = "Internal server error")
                })
-    public ResponseEntity<VehicleBrandDto> getBrandById(@PathVariable Long id) {
+    public ResponseEntity<VehicleBrandResponseDto> getBrandById(@PathVariable Long id) {
         log.info("Admin requested vehicle brand with ID: {}", id);
-        VehicleBrandDto brand = brandService.getBrandById(id);
+        VehicleBrandResponseDto brand = brandService.getBrandById(id);
         return ResponseEntity.ok(brand);
     }
     
@@ -66,9 +69,9 @@ public class AdminVehicleBrandController {
                        @ApiResponse(responseCode = "500", description = "Internal server error")
                })
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<VehicleBrandDto> createBrand(@Valid @RequestBody VehicleBrandDto brandDto) {
-        log.info("Admin creating new vehicle brand: {}", brandDto.getName());
-        VehicleBrandDto createdBrand = brandService.createBrand(brandDto);
+    public ResponseEntity<VehicleBrandResponseDto> createBrand(@Valid @RequestBody CreateVehicleBrandDto createDto) {
+        log.info("Admin creating new vehicle brand: {}", createDto.getName());
+        VehicleBrandResponseDto createdBrand = brandService.createBrand(createDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdBrand);
     }
     
@@ -83,9 +86,9 @@ public class AdminVehicleBrandController {
                        @ApiResponse(responseCode = "404", description = "Brand not found"),
                        @ApiResponse(responseCode = "500", description = "Internal server error")
                })
-    public ResponseEntity<VehicleBrandDto> updateBrand(@PathVariable Long id, @Valid @RequestBody VehicleBrandDto brandDto) {
+    public ResponseEntity<VehicleBrandResponseDto> updateBrand(@PathVariable Long id, @Valid @RequestBody UpdateVehicleBrandDto updateDto) {
         log.info("Admin updating vehicle brand with ID: {}", id);
-        VehicleBrandDto updatedBrand = brandService.updateBrand(id, brandDto);
+        VehicleBrandResponseDto updatedBrand = brandService.updateBrand(id, updateDto);
         return ResponseEntity.ok(updatedBrand);
     }
     
@@ -116,9 +119,9 @@ public class AdminVehicleBrandController {
                        @ApiResponse(responseCode = "404", description = "Brand not found"),
                        @ApiResponse(responseCode = "500", description = "Internal server error")
                })
-    public ResponseEntity<Void> toggleBrandStatus(@PathVariable Long id) {
+    public ResponseEntity<VehicleBrandResponseDto> toggleBrandStatus(@PathVariable Long id) {
         log.info("Admin toggling status for vehicle brand with ID: {}", id);
-        brandService.toggleBrandStatus(id);
-        return ResponseEntity.ok().build();
+        VehicleBrandResponseDto updatedBrand = brandService.toggleBrandStatus(id);
+        return ResponseEntity.ok(updatedBrand);
     }
 }

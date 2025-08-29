@@ -5,6 +5,7 @@ import lombok.Data;
 
 @Data
 public class VehicleStatusUpdateDto {
-    @NotNull(message = "Status cannot be null")
+    
+    @NotNull(message = "Vehicle status cannot be null")
     private VehicleStatus status;
 }

@@ -1,82 +1,80 @@
 package com.adamo.vrspfab.vehicles;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@RequiredArgsConstructor
 public class VehicleSpecification implements Specification<Vehicle> {
 
-    private final VehicleFilter filters;
-
-    public VehicleSpecification(VehicleFilter filters) {
-        this.filters = filters;
-    }
+    private final VehicleFilter filter;
 
     @Override
-    public Predicate toPredicate(jakarta.persistence.criteria.Root<Vehicle> root, jakarta.persistence.criteria.CriteriaQuery<?> query, jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder) {
+    public Predicate toPredicate(Root<Vehicle> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
         List<Predicate> predicates = new ArrayList<>();
 
-        if (filters.getSearch() != null && !filters.getSearch().trim().isEmpty()) {
-            String lowerCaseSearch = filters.getSearch().toLowerCase();
-            Predicate brandLike = criteriaBuilder.like(criteriaBuilder.lower(root.get("brand").get("name")), "%" + lowerCaseSearch + "%");
-            Predicate modelLike = criteriaBuilder.like(criteriaBuilder.lower(root.get("model").get("name")), "%" + lowerCaseSearch + "%");
-            Predicate licensePlateLike = criteriaBuilder.like(criteriaBuilder.lower(root.get("licensePlate")), "%" + lowerCaseSearch + "%");
-            predicates.add(criteriaBuilder.or(brandLike, modelLike, licensePlateLike));
+        if (filter.getSearch() != null && !filter.getSearch().trim().isEmpty()) {
+            String searchPattern = "%" + filter.getSearch().toLowerCase() + "%";
+            Predicate searchPredicate = criteriaBuilder.or(
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("licensePlate")), searchPattern),
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("description")), searchPattern),
+                    criteriaBuilder.like(criteriaBuilder.lower(root.join("brand").get("name")), searchPattern),
+                    criteriaBuilder.like(criteriaBuilder.lower(root.join("model").get("name")), searchPattern),
+                    criteriaBuilder.like(criteriaBuilder.lower(root.join("category").get("name")), searchPattern)
+            );
+            predicates.add(searchPredicate);
         }
 
-        if (filters.getBrandId() != null) {
-            jakarta.persistence.criteria.Join<Object, Object> brandJoin = root.join("brand", jakarta.persistence.criteria.JoinType.INNER);
-            predicates.add(criteriaBuilder.equal(brandJoin.get("id"), filters.getBrandId()));
+        if (filter.getBrandId() != null) {
+            predicates.add(criteriaBuilder.equal(root.join("brand").get("id"), filter.getBrandId()));
         }
-        if (filters.getModelId() != null) {
-            jakarta.persistence.criteria.Join<Object, Object> modelJoin = root.join("model", jakarta.persistence.criteria.JoinType.INNER);
-            predicates.add(criteriaBuilder.equal(modelJoin.get("id"), filters.getModelId()));
+
+        if (filter.getModelId() != null) {
+            predicates.add(criteriaBuilder.equal(root.join("model").get("id"), filter.getModelId()));
         }
-        if (filters.getCategoryId() != null) {
-            // Use a left join to ensure vehicles without a category are still considered if no category filter is applied,
-            // though the outer if ensures this block is only entered when a categoryId is provided.
-            // This makes the join explicit and potentially more robust.
-            jakarta.persistence.criteria.Join<Vehicle, VehicleCategory> categoryJoin = root.join("category", jakarta.persistence.criteria.JoinType.INNER);
-            predicates.add(criteriaBuilder.equal(categoryJoin.get("id"), filters.getCategoryId()));
+
+        if (filter.getCategoryId() != null) {
+            predicates.add(criteriaBuilder.equal(root.join("category").get("id"), filter.getCategoryId()));
         }
-        if (filters.getFuelType() != null && !filters.getFuelType().trim().isEmpty()) {
-            try {
-                predicates.add(criteriaBuilder.equal(root.get("fuelType"), FuelType.valueOf(filters.getFuelType().toUpperCase())));
-            } catch (IllegalArgumentException e) {
-                // Log the error or handle it as appropriate, for now, we'll just ignore the filter
-                // log.warn("Invalid fuelType received: {}", filters.getFuelType());
-            }
+
+        if (filter.getFuelType() != null && !filter.getFuelType().trim().isEmpty()) {
+            predicates.add(criteriaBuilder.equal(root.get("fuelType"), FuelType.valueOf(filter.getFuelType().toUpperCase())));
         }
-        if (filters.getStatus() != null && !filters.getStatus().trim().isEmpty()) {
-            try {
-                predicates.add(criteriaBuilder.equal(root.get("status"), VehicleStatus.valueOf(filters.getStatus().toUpperCase())));
-            } catch (IllegalArgumentException e) {
-                // Log the error or handle it as appropriate, for now, we'll just ignore the filter
-                // log.warn("Invalid status received: {}", filters.getStatus());
-            }
+
+        if (filter.getStatus() != null && !filter.getStatus().trim().isEmpty()) {
+            predicates.add(criteriaBuilder.equal(root.get("status"), VehicleStatus.valueOf(filter.getStatus().toUpperCase())));
         }
-        if (filters.getMinPrice() != null) {
-            predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("pricePerDay"), filters.getMinPrice()));
+
+        if (filter.getMinPrice() != null) {
+            predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("pricePerDay"), filter.getMinPrice()));
         }
-        if (filters.getMaxPrice() != null) {
-            predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("pricePerDay"), filters.getMaxPrice()));
+
+        if (filter.getMaxPrice() != null) {
+            predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("pricePerDay"), filter.getMaxPrice()));
         }
-        if (filters.getMinYear() != null) {
-            predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("year"), filters.getMinYear()));
+
+        if (filter.getMinYear() != null) {
+            predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("year"), filter.getMinYear()));
         }
-        if (filters.getMaxYear() != null) {
-            predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("year"), filters.getMaxYear()));
+
+        if (filter.getMaxYear() != null) {
+            predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("year"), filter.getMaxYear()));
         }
-        if (filters.getMinMileage() != null) {
-            predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("mileage"), filters.getMinMileage()));
+
+        if (filter.getMinMileage() != null) {
+            predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("mileage"), filter.getMinMileage()));
         }
-        if (filters.getMaxMileage() != null) {
-            predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("mileage"), filters.getMaxMileage()));
+
+        if (filter.getMaxMileage() != null) {
+            predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("mileage"), filter.getMaxMileage()));
         }
 
         return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
 }
-

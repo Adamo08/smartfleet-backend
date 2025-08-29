@@ -28,6 +28,9 @@ public class VehicleSecurityRules implements SecurityRules {
                 .requestMatchers(HttpMethod.PATCH, "/vehicles/{id}/status").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PATCH, "/vehicles/{id}/mileage").hasRole("ADMIN")
                 
+                // Enhanced Admin Vehicle Management - all CRUD operations
+                .requestMatchers("/admin/vehicles/**").hasRole("ADMIN")
+                
                 // Admin-only access for vehicle categories
                 .requestMatchers(HttpMethod.GET, "/admin/vehicle-categories").permitAll() // Allow public access to view categories
                 .requestMatchers("/admin/vehicle-categories/**").hasRole("ADMIN")

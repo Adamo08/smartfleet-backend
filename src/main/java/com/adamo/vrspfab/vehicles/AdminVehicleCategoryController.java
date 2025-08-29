@@ -1,5 +1,8 @@
 package com.adamo.vrspfab.vehicles;
 
+import com.adamo.vrspfab.vehicles.dto.CreateVehicleCategoryDto;
+import com.adamo.vrspfab.vehicles.dto.UpdateVehicleCategoryDto;
+import com.adamo.vrspfab.vehicles.dto.VehicleCategoryResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,9 +35,9 @@ public class AdminVehicleCategoryController {
                        @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges"),
                        @ApiResponse(responseCode = "500", description = "Internal server error")
                })
-    public ResponseEntity<Page<VehicleCategoryDto>> getAllCategories(Pageable pageable) {
+    public ResponseEntity<Page<VehicleCategoryResponseDto>> getAllCategories(Pageable pageable) {
         log.info("Admin requested all vehicle categories with pagination. Page: {}, Size: {}", pageable.getPageNumber(), pageable.getPageSize());
-        Page<VehicleCategoryDto> categories = categoryService.getAllCategories(pageable);
+        Page<VehicleCategoryResponseDto> categories = categoryService.getAllCategories(pageable);
         return ResponseEntity.ok(categories);
     }
     
@@ -48,9 +51,9 @@ public class AdminVehicleCategoryController {
                        @ApiResponse(responseCode = "404", description = "Category not found"),
                        @ApiResponse(responseCode = "500", description = "Internal server error")
                })
-    public ResponseEntity<VehicleCategoryDto> getCategoryById(@PathVariable Long id) {
+    public ResponseEntity<VehicleCategoryResponseDto> getCategoryById(@PathVariable Long id) {
         log.info("Admin requested vehicle category with ID: {}", id);
-        VehicleCategoryDto category = categoryService.getCategoryById(id);
+        VehicleCategoryResponseDto category = categoryService.getCategoryById(id);
         return ResponseEntity.ok(category);
     }
     
@@ -66,9 +69,9 @@ public class AdminVehicleCategoryController {
                        @ApiResponse(responseCode = "500", description = "Internal server error")
                })
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<VehicleCategoryDto> createCategory(@Valid @RequestBody VehicleCategoryDto categoryDto) {
-        log.info("Admin creating new vehicle category: {}", categoryDto.getName());
-        VehicleCategoryDto createdCategory = categoryService.createCategory(categoryDto);
+    public ResponseEntity<VehicleCategoryResponseDto> createCategory(@Valid @RequestBody CreateVehicleCategoryDto createDto) {
+        log.info("Admin creating new vehicle category: {}", createDto.getName());
+        VehicleCategoryResponseDto createdCategory = categoryService.createCategory(createDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdCategory);
     }
     
@@ -83,9 +86,9 @@ public class AdminVehicleCategoryController {
                        @ApiResponse(responseCode = "404", description = "Category not found"),
                        @ApiResponse(responseCode = "500", description = "Internal server error")
                })
-    public ResponseEntity<VehicleCategoryDto> updateCategory(@PathVariable Long id, @Valid @RequestBody VehicleCategoryDto categoryDto) {
+    public ResponseEntity<VehicleCategoryResponseDto> updateCategory(@PathVariable Long id, @Valid @RequestBody UpdateVehicleCategoryDto updateDto) {
         log.info("Admin updating vehicle category with ID: {}", id);
-        VehicleCategoryDto updatedCategory = categoryService.updateCategory(id, categoryDto);
+        VehicleCategoryResponseDto updatedCategory = categoryService.updateCategory(id, updateDto);
         return ResponseEntity.ok(updatedCategory);
     }
     
@@ -116,9 +119,9 @@ public class AdminVehicleCategoryController {
                        @ApiResponse(responseCode = "404", description = "Category not found"),
                        @ApiResponse(responseCode = "500", description = "Internal server error")
                })
-    public ResponseEntity<Void> toggleCategoryStatus(@PathVariable Long id) {
+    public ResponseEntity<VehicleCategoryResponseDto> toggleCategoryStatus(@PathVariable Long id) {
         log.info("Admin toggling status for vehicle category with ID: {}", id);
-        categoryService.toggleCategoryStatus(id);
-        return ResponseEntity.ok().build();
+        VehicleCategoryResponseDto updatedCategory = categoryService.toggleCategoryStatus(id);
+        return ResponseEntity.ok(updatedCategory);
     }
 }

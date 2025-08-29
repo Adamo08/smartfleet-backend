@@ -13,4 +13,9 @@ public interface VehicleModelRepository extends JpaRepository<VehicleModel, Long
     Optional<VehicleModel> findByName(String name);
     
     boolean existsByNameAndBrandId(String name, Long brandId);
+
+    /**
+     * Find models by brand ID
+     */
+    List<VehicleModel> findByBrandId(Long brandId);
 }

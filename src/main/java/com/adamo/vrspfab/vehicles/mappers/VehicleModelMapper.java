@@ -1,5 +1,7 @@
-package com.adamo.vrspfab.vehicles;
+package com.adamo.vrspfab.vehicles.mappers;
 
+import com.adamo.vrspfab.vehicles.VehicleModel;
+import com.adamo.vrspfab.vehicles.VehicleModelDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -16,6 +18,7 @@ public interface VehicleModelMapper {
     @Mapping(target = "updatedAt", source = "updatedAt", dateFormat = "yyyy-MM-dd'T'HH:mm:ss")
     VehicleModelDto toDto(VehicleModel entity);
     
+    @Mapping(target = "vehicles", ignore = true)
     @Mapping(target = "brand", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
@@ -26,6 +29,7 @@ public interface VehicleModelMapper {
     List<VehicleModel> toEntityList(List<VehicleModelDto> dtos);
     
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "vehicles", ignore = true)
     @Mapping(target = "brand", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
