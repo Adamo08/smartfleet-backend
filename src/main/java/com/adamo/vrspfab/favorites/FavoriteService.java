@@ -78,6 +78,8 @@ public class FavoriteService {
 
         Favorite savedFavorite = favoriteRepository.save(favorite);
         logger.info("Favorite created successfully with ID: {}", savedFavorite.getId());
+        
+        // Send real-time notification for favorite addition
         try {
             notificationService.createAndDispatchRealTimeOnly(
                     user,
@@ -85,7 +87,11 @@ public class FavoriteService {
                     "Added vehicle " + vehicle.getBrand().getName() + " " + vehicle.getModel().getName() + " to favorites.",
                     Map.of("vehicleId", vehicle.getId())
             );
-        } catch (Exception ignored) {}
+            logger.info("✅ Successfully sent real-time notification for favorite addition to user: {}", user.getEmail());
+        } catch (Exception e) {
+            logger.error("❌ Failed to send real-time notification for favorite addition to user {}: {}", user.getEmail(), e.getMessage(), e);
+        }
+        
         return favoriteMapper.toDto(savedFavorite);
     }
 
@@ -124,14 +130,20 @@ public class FavoriteService {
         }
         
         favoriteRepository.delete(favorite);
+        logger.info("Favorite deleted successfully with ID: {}", id);
         
         // Send real-time notification for favorite removal
-        notificationService.createAndDispatchRealTimeOnly(
-            currentUser, 
-            NotificationType.FAVORITE_REMOVED, 
-            "Vehicle removed from favorites", 
-            Map.of("vehicleId", favorite.getVehicle().getId())
-        );
+        try {
+            notificationService.createAndDispatchRealTimeOnly(
+                currentUser, 
+                NotificationType.FAVORITE_REMOVED, 
+                "Vehicle removed from favorites", 
+                Map.of("vehicleId", favorite.getVehicle().getId())
+            );
+            logger.info("✅ Successfully sent real-time notification for favorite removal to user: {}", currentUser.getEmail());
+        } catch (Exception e) {
+            logger.error("❌ Failed to send real-time notification for favorite removal to user {}: {}", currentUser.getEmail(), e.getMessage(), e);
+        }
     }
 
     public void deleteAllMyFavorites() {
@@ -140,14 +152,20 @@ public class FavoriteService {
         
         if (!userFavorites.isEmpty()) {
             favoriteRepository.deleteAll(userFavorites);
+            logger.info("Deleted {} favorites for user: {}", userFavorites.size(), currentUser.getEmail());
             
             // Send real-time notification for bulk favorite removal
-            notificationService.createAndDispatchRealTimeOnly(
-                currentUser, 
-                NotificationType.FAVORITE_REMOVED, 
-                "All favorites cleared", 
-                Map.of("count", userFavorites.size())
-            );
+            try {
+                notificationService.createAndDispatchRealTimeOnly(
+                    currentUser, 
+                    NotificationType.FAVORITE_REMOVED, 
+                    "All favorites cleared", 
+                    Map.of("count", userFavorites.size())
+                );
+                logger.info("✅ Successfully sent real-time notification for bulk favorite removal to user: {}", currentUser.getEmail());
+            } catch (Exception e) {
+                logger.error("❌ Failed to send real-time notification for bulk favorite removal to user {}: {}", currentUser.getEmail(), e.getMessage(), e);
+            }
         }
     }
 
