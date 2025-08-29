@@ -2,10 +2,11 @@ package com.adamo.vrspfab.testimonials;
 
 import com.adamo.vrspfab.common.ResourceNotFoundException;
 import com.adamo.vrspfab.common.SecurityUtilsService;
+import com.adamo.vrspfab.dashboard.ActivityEventListener;
 import com.adamo.vrspfab.users.User;
 import com.adamo.vrspfab.users.UserService;
 import com.adamo.vrspfab.vehicles.Vehicle;
-import com.adamo.vrspfab.vehicles.VehicleMapper;
+import com.adamo.vrspfab.vehicles.mappers.VehicleMapper;
 import com.adamo.vrspfab.vehicles.VehicleService;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -34,7 +35,8 @@ public class TestimonialService {
     private final UserService userService;
     private final VehicleService vehicleService;
     private final VehicleMapper vehicleMapper;
-    private SecurityUtilsService securityUtilsService;
+    private final SecurityUtilsService securityUtilsService;
+    private final ActivityEventListener activityEventListener;
 
 
     @Transactional
@@ -128,6 +130,16 @@ public class TestimonialService {
         testimonial.setApproved(true);
         Testimonial updatedTestimonial = testimonialRepository.save(testimonial);
         logger.info("Testimonial with ID: {} approved successfully.", id);
+        
+        // Record testimonial approval activity
+        try {
+            User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+            activityEventListener.recordTestimonialAction("approved", updatedTestimonial.getId(), 
+                updatedTestimonial.getTitle(), currentUser);
+        } catch (Exception e) {
+            logger.warn("Could not record testimonial approval activity: {}", e.getMessage());
+        }
+        
         return testimonialMapper.toDto(updatedTestimonial);
     }
 
@@ -279,6 +291,16 @@ public class TestimonialService {
         
         Testimonial updatedTestimonial = testimonialRepository.save(testimonial);
         logger.info("Testimonial with ID: {} rejected successfully.", id);
+        
+        // Record testimonial rejection activity
+        try {
+            User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+            activityEventListener.recordTestimonialAction("rejected", updatedTestimonial.getId(), 
+                updatedTestimonial.getTitle(), currentUser);
+        } catch (Exception e) {
+            logger.warn("Could not record testimonial rejection activity: {}", e.getMessage());
+        }
+        
         return testimonialMapper.toDto(updatedTestimonial);
     }
 

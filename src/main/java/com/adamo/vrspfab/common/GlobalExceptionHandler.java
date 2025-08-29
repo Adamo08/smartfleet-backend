@@ -11,11 +11,7 @@ import com.adamo.vrspfab.slots.InvalidSlotTimeException;
 import com.adamo.vrspfab.slots.NoAvailableSlotsException;
 import com.adamo.vrspfab.testimonials.DuplicateTestimonialException;
 import com.adamo.vrspfab.users.UserNotFoundException;
-import com.adamo.vrspfab.vehicles.DuplicateLicensePlateException;
-import com.adamo.vrspfab.vehicles.InvalidVehicleDataException;
-import com.adamo.vrspfab.vehicles.InvalidVehicleStatusUpdateException;
-import com.adamo.vrspfab.vehicles.VehicleDecommissionedException;
-import com.adamo.vrspfab.vehicles.VehicleNotAvailableException;
+import com.adamo.vrspfab.vehicles.exceptions.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -293,6 +289,14 @@ public class GlobalExceptionHandler {
         );
     }
 
+
+    /**
+     * Handles NoAvailableSlotsException, returning a 400 Bad Request status.
+     *
+     * @param ex The NoAvailableSlotsException.
+     * @param request The WebRequest.
+     * @return ResponseEntity containing the error details.
+     */
     @ExceptionHandler(NoAvailableSlotsException.class)
     public ResponseEntity<ErrorDto> handleNoAvailableSlotsException(
             NoAvailableSlotsException ex, WebRequest request
@@ -305,6 +309,30 @@ public class GlobalExceptionHandler {
                 request.getDescription(false).replace("uri=", "")
         );
     }
+
+
+
+
+    /**
+     * Handles VehicleNotFoundException, returning a 404 Not Found status.
+     *
+     * @param ex The VehicleNotFoundException.
+     * @param request The WebRequest.
+     * @return ResponseEntity containing the error details.
+     */
+    @ExceptionHandler(VehicleNotFoundException.class)
+    public ResponseEntity<ErrorDto> handleVehicleNotFoundException(
+            VehicleNotFoundException ex, WebRequest request
+    ) {
+        log.warn("Vehicle not found: {}", ex.getMessage());
+        return buildErrorResponse(
+                HttpStatus.NOT_FOUND,
+                "Not Found",
+                "Vehicle not found: " + ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
 
 
     /**
@@ -488,6 +516,102 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(
                 HttpStatus.BAD_REQUEST,
                 "Bad Request",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
+    /**
+     * Handles VehicleBrandNotFoundException, returning a 404 Not Found status.
+     */
+    @ExceptionHandler(VehicleBrandNotFoundException.class)
+    public ResponseEntity<ErrorDto> handleVehicleBrandNotFoundException(
+            VehicleBrandNotFoundException ex, WebRequest request
+    ) {
+        log.warn("Vehicle brand not found: {}", ex.getMessage());
+        return buildErrorResponse(
+                HttpStatus.NOT_FOUND,
+                "Not Found",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
+    /**
+     * Handles VehicleCategoryNotFoundException, returning a 404 Not Found status.
+     */
+    @ExceptionHandler(VehicleCategoryNotFoundException.class)
+    public ResponseEntity<ErrorDto> handleVehicleCategoryNotFoundException(
+            VehicleCategoryNotFoundException ex, WebRequest request
+    ) {
+        log.warn("Vehicle category not found: {}", ex.getMessage());
+        return buildErrorResponse(
+                HttpStatus.NOT_FOUND,
+                "Not Found",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
+    /**
+     * Handles VehicleModelNotFoundException, returning a 404 Not Found status.
+     */
+    @ExceptionHandler(VehicleModelNotFoundException.class)
+    public ResponseEntity<ErrorDto> handleVehicleModelNotFoundException(
+            VehicleModelNotFoundException ex, WebRequest request
+    ) {
+        log.warn("Vehicle model not found: {}", ex.getMessage());
+        return buildErrorResponse(
+                HttpStatus.NOT_FOUND,
+                "Not Found",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
+    /**
+     * Handles DuplicateVehicleBrandException, returning a 409 Conflict status.
+     */
+    @ExceptionHandler(DuplicateVehicleBrandException.class)
+    public ResponseEntity<ErrorDto> handleDuplicateVehicleBrandException(
+            DuplicateVehicleBrandException ex, WebRequest request
+    ) {
+        log.warn("Duplicate vehicle brand: {}", ex.getMessage());
+        return buildErrorResponse(
+                HttpStatus.CONFLICT,
+                "Conflict",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
+    /**
+     * Handles DuplicateVehicleCategoryException, returning a 409 Conflict status.
+     */
+    @ExceptionHandler(DuplicateVehicleCategoryException.class)
+    public ResponseEntity<ErrorDto> handleDuplicateVehicleCategoryException(
+            DuplicateVehicleCategoryException ex, WebRequest request
+    ) {
+        log.warn("Duplicate vehicle category: {}", ex.getMessage());
+        return buildErrorResponse(
+                HttpStatus.CONFLICT,
+                "Conflict",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
+    /**
+     * Handles DuplicateVehicleModelException, returning a 409 Conflict status.
+     */
+    @ExceptionHandler(DuplicateVehicleModelException.class)
+    public ResponseEntity<ErrorDto> handleDuplicateVehicleModelException(
+            DuplicateVehicleModelException ex, WebRequest request
+    ) {
+        log.warn("Duplicate vehicle model: {}", ex.getMessage());
+        return buildErrorResponse(
+                HttpStatus.CONFLICT,
+                "Conflict",
                 ex.getMessage(),
                 request.getDescription(false).replace("uri=", "")
         );

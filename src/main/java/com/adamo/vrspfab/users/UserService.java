@@ -4,6 +4,7 @@ package com.adamo.vrspfab.users;
 import com.adamo.vrspfab.common.DuplicateFieldException;
 import com.adamo.vrspfab.common.SecurityUtilsService;
 import com.adamo.vrspfab.notifications.EmailService;
+import com.adamo.vrspfab.dashboard.ActivityEventListener;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,6 +24,7 @@ public class UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final ActivityEventListener activityEventListener;
 
     public Page<UserDto> getAllUsers(PageRequest pageable, String searchTerm, String role) {
         UserSpecification spec = new UserSpecification(searchTerm, role);
@@ -52,9 +54,12 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRole(Role.CUSTOMER); // Default role for new users
         user.setAuthProvider(AuthProvider.LOCAL); // Default auth provider
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
-        return userMapper.toDto(user);
+        // Record user registration activity
+        activityEventListener.recordUserRegistration(savedUser);
+
+        return userMapper.toDto(savedUser);
     }
 
     public UserDto updateUser(Long userId, UpdateUserRequest request) {
@@ -76,9 +81,13 @@ public class UserService {
 
     public UserDto updateUserRole(Long userId, Role role) {
         var user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+        String oldRole = user.getRole().getName();
+        String newRole = role.getName();
+        
         user.setRole(role);
-        userRepository.save(user);
-        return userMapper.toDto(user);
+        User savedUser = userRepository.save(user);
+        
+        return userMapper.toDto(savedUser);
     }
 
     public void deleteUser(Long userId) {

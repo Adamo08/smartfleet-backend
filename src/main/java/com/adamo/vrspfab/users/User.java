@@ -105,4 +105,8 @@ public class User {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
 }
