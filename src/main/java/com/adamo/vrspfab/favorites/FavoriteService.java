@@ -6,7 +6,7 @@ import com.adamo.vrspfab.notifications.NotificationService;
 import com.adamo.vrspfab.users.User;
 import com.adamo.vrspfab.users.UserService;
 import com.adamo.vrspfab.vehicles.Vehicle;
-import com.adamo.vrspfab.vehicles.VehicleMapper;
+import com.adamo.vrspfab.vehicles.mappers.VehicleMapper;
 import com.adamo.vrspfab.vehicles.VehicleService;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,8 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.access.AccessDeniedException;
 import com.adamo.vrspfab.users.Role;
 
@@ -81,10 +79,11 @@ public class FavoriteService {
         Favorite savedFavorite = favoriteRepository.save(favorite);
         logger.info("Favorite created successfully with ID: {}", savedFavorite.getId());
         try {
-            notificationService.createAndDispatchNotification(
+            notificationService.createAndDispatchRealTimeOnly(
                     user,
-                    com.adamo.vrspfab.notifications.NotificationType.GENERAL_UPDATE,
-                    "Added vehicle " + vehicle.getBrand() + " " + vehicle.getModel() + " to favorites."
+                    NotificationType.FAVORITE_ADDED,
+                    "Added vehicle " + vehicle.getBrand().getName() + " " + vehicle.getModel().getName() + " to favorites.",
+                    Map.of("vehicleId", vehicle.getId())
             );
         } catch (Exception ignored) {}
         return favoriteMapper.toDto(savedFavorite);

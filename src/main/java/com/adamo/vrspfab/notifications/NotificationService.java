@@ -1,6 +1,7 @@
 package com.adamo.vrspfab.notifications;
 
 import com.adamo.vrspfab.common.SecurityUtilsService;
+import com.adamo.vrspfab.dashboard.ActivityEventListener;
 import com.adamo.vrspfab.users.User;
 import com.adamo.vrspfab.users.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class NotificationService {
     private final SecurityUtilsService securityUtilsService;
     private final SimpMessagingTemplate messagingTemplate;
     private final EmailService emailService;
+    private final ActivityEventListener activityEventListener;
 
     /**
      * The main method for creating and dispatching a notification.
@@ -198,6 +200,14 @@ public class NotificationService {
         }
         
         log.info("📊 Broadcast completed - Success: {}, Failures: {}", successCount, failureCount);
+        
+        // Record broadcast notification activity
+        try {
+            User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+            activityEventListener.recordBroadcastNotification(request.getMessage(), successCount, currentUser);
+        } catch (Exception e) {
+            log.warn("Could not record broadcast notification activity: {}", e.getMessage());
+        }
     }
 
     /**
