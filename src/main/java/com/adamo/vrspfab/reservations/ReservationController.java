@@ -7,11 +7,14 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import com.adamo.vrspfab.slots.SlotDto;
 
 /**
  * REST controller for authenticated users to manage their own reservations.
@@ -150,16 +153,67 @@ public class ReservationController {
     }
 
 
-    // Removed as this endpoint is better placed in SlotController or its functionality absorbed by a more flexible booking flow
-    // @Operation(summary = "Get available slots for a vehicle",
-    //            description = "Retrieves a list of available slots for a given vehicle ID. This is a helper endpoint for creating reservations.",
-    //            responses = {
-    //                    @ApiResponse(responseCode = "200", description = "Successfully retrieved available slots"),
-    //                    @ApiResponse(responseCode = "404", description = "Vehicle not found"),
-    //                    @ApiResponse(responseCode = "500", description = "Internal server error")
-    //            })
-    // @GetMapping("/vehicles/{vehicleId}/available-slots")
-    // public ResponseEntity<List<SlotDto>> getAvailableSlots(@PathVariable Long vehicleId) {
-    //     return ResponseEntity.ok(slotService.getAvailableSlotsByVehicleId(vehicleId));
-    // }
+    @Operation(summary = "Get blocked dates for a vehicle",
+               description = "Retrieves dates that are blocked/unavailable for a given vehicle due to existing reservations.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved blocked dates"),
+                       @ApiResponse(responseCode = "404", description = "Vehicle not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @GetMapping("/vehicles/{vehicleId}/blocked-dates")
+    public ResponseEntity<List<String>> getBlockedDates(
+            @PathVariable Long vehicleId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+        
+        // Default to next 3 months if no date range provided
+        if (startDate == null) {
+            startDate = LocalDateTime.now();
+        }
+        if (endDate == null) {
+            endDate = startDate.plusMonths(3);
+        }
+        
+        List<String> blockedDates = reservationService.getBlockedDatesForVehicle(vehicleId, startDate, endDate);
+        return ResponseEntity.ok(blockedDates);
+    }
+
+    /**
+     * GET /reservations/vehicles/{vehicleId}/available-slots : Gets available slots for a vehicle
+     */
+    @Operation(summary = "Get available slots for a vehicle",
+               description = "Retrieves available time slots for a specific vehicle within a date range, supporting different booking types.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved available slots"),
+                       @ApiResponse(responseCode = "404", description = "Vehicle not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @GetMapping("/vehicles/{vehicleId}/available-slots")
+    public ResponseEntity<List<SlotDto>> getAvailableSlots(
+            @PathVariable Long vehicleId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(defaultValue = "DAILY") String bookingType) {
+        
+        List<SlotDto> availableSlots = reservationService.getAvailableSlots(vehicleId, startDate, endDate, bookingType);
+        return ResponseEntity.ok(availableSlots);
+    }
+
+    /**
+     * GET /reservations/vehicles/{vehicleId}/slots : Gets all slots for a vehicle (for backward compatibility)
+     */
+    @Operation(summary = "Get slots for a vehicle",
+               description = "Retrieves all available slots for a specific vehicle. Backward compatibility endpoint.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved slots"),
+                       @ApiResponse(responseCode = "404", description = "Vehicle not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @GetMapping("/vehicles/{vehicleId}/slots")
+    public ResponseEntity<List<SlotDto>> getVehicleSlots(@PathVariable Long vehicleId) {
+        LocalDateTime startDate = LocalDateTime.now();
+        LocalDateTime endDate = startDate.plusMonths(3);
+        List<SlotDto> availableSlots = reservationService.getAvailableSlots(vehicleId, startDate, endDate, "DAILY");
+        return ResponseEntity.ok(availableSlots);
+    }
 }

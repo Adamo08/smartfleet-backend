@@ -1,11 +1,19 @@
 package com.adamo.vrspfab.reservations;
 
 import com.adamo.vrspfab.users.UserMapper;
-import com.adamo.vrspfab.vehicles.VehicleMapper;
+import com.adamo.vrspfab.vehicles.mappers.VehicleMapper;
+import com.adamo.vrspfab.slots.SlotMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring", uses = {UserMapper.class, VehicleMapper.class})
+@Mapper(
+        componentModel = "spring",
+        uses = {
+                UserMapper.class,
+                VehicleMapper.class,
+                SlotMapper.class
+        }
+)
 public interface ReservationMapper {
 
     /**
@@ -18,6 +26,7 @@ public interface ReservationMapper {
     @Mapping(target = "vehicle", source = "vehicle")
     @Mapping(target = "slots", source = "slots")
     @Mapping(target = "createdAt", source = "createdAt")
+    @Mapping(target = "bookingContext", source = "bookingContext")
     DetailedReservationDto toDetailedDto(Reservation reservation);
 
     /**
@@ -29,6 +38,7 @@ public interface ReservationMapper {
     @Mapping(target = "user", source = "user")
     @Mapping(target = "vehicle", source = "vehicle")
     @Mapping(target = "createdAt", source = "createdAt")
+    @Mapping(target = "bookingContext", source = "bookingContext")
     ReservationSummaryDto toSummaryDto(Reservation reservation);
 
     /**
@@ -42,6 +52,12 @@ public interface ReservationMapper {
     @Mapping(target = "user", ignore = true)
     @Mapping(target = "vehicle", ignore = true)
     @Mapping(target = "status", ignore = true)
+    @Mapping(target = "payment", ignore = true)
+    @Mapping(target = "slots", ignore = true)
+    @Mapping(target = "bookmarks", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "bookingContext", source = "bookingContext")
     Reservation fromCreateRequest(CreateReservationRequest request);
 
     @Mapping(target = "userId", source = "user.id")
@@ -50,6 +66,11 @@ public interface ReservationMapper {
 
     @Mapping(target = "user.id", source = "userId")
     @Mapping(target = "vehicle.id", source = "vehicleId")
+    @Mapping(target = "payment", ignore = true)
+    @Mapping(target = "slots", ignore = true)
+    @Mapping(target = "bookmarks", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Reservation toEntity(ReservationDto reservationDto);
 
     @Mapping(target = "user", source = "user")

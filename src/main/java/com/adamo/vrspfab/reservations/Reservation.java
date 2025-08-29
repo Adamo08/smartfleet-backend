@@ -7,6 +7,8 @@ import com.adamo.vrspfab.vehicles.Vehicle;
 import com.adamo.vrspfab.users.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -53,6 +55,14 @@ public class Reservation {
 
     @Column(name = "comment", length = 500)
     private String comment;
+
+    /**
+     * JSON field to store booking context information.
+     * Contains slot type, duration, calculation method, and preferences.
+     */
+    @Column(name = "booking_context", columnDefinition = "json")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private ReservationBookingContext bookingContext;
 
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "reservation")
     private Payment payment;

@@ -5,10 +5,13 @@ import com.adamo.vrspfab.common.SecurityUtilsService;
 import com.adamo.vrspfab.slots.NoAvailableSlotsException;
 import com.adamo.vrspfab.notifications.NotificationService;
 import com.adamo.vrspfab.notifications.NotificationType;
+import com.adamo.vrspfab.dashboard.ActivityEventListener;
 import com.adamo.vrspfab.slots.SlotRepository;
+import com.adamo.vrspfab.slots.SlotDto;
+import com.adamo.vrspfab.slots.DynamicSlotService;
 import com.adamo.vrspfab.users.Role;
 import com.adamo.vrspfab.users.User;
-import com.adamo.vrspfab.vehicles.VehicleMapper;
+import com.adamo.vrspfab.vehicles.mappers.VehicleMapper;
 import com.adamo.vrspfab.vehicles.VehicleService;
 import com.adamo.vrspfab.vehicles.Vehicle;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +23,11 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Service class for handling reservation-related operations for authenticated users.
@@ -39,10 +46,12 @@ public class ReservationService {
     private final NotificationService notificationService;
     private final ReservationMapper reservationMapper;
     private final SlotRepository slotRepository;
+    private final DynamicSlotService dynamicSlotService;
     private final SecurityUtilsService securityUtilsService;
     private final com.adamo.vrspfab.vehicles.VehicleCategoryRepository vehicleCategoryRepository;
     private final com.adamo.vrspfab.vehicles.VehicleBrandRepository vehicleBrandRepository;
     private final com.adamo.vrspfab.vehicles.VehicleModelRepository vehicleModelRepository;
+    private final ActivityEventListener activityEventListener;
 
     /**
      * Creates a new reservation for the currently authenticated user.
@@ -91,11 +100,14 @@ public class ReservationService {
         // Save reservation
         Reservation savedReservation = reservationRepository.save(reservation);
 
+        // Record activity
+        activityEventListener.recordReservationCreated(savedReservation);
+
         // Send notification
         notificationService.createAndDispatchNotification(
                 currentUser,
                 NotificationType.RESERVATION_PENDING,
-                "Your reservation for vehicle " + vehicleDto.getBrand() + " " + vehicleDto.getModel() + " is now pending.",
+                "Your reservation for vehicle " + vehicleDto.getBrandName() + " " + vehicleDto.getModelName() + " is now pending.",
                 java.util.Map.of(
                         "reservationId", savedReservation.getId(),
                         "vehicle", vehicleDto.getBrand() + " " + vehicleDto.getModel(),
@@ -229,7 +241,7 @@ public class ReservationService {
         notificationService.createAndDispatchNotification(
                 currentUser,
                 NotificationType.RESERVATION_CANCELLED,
-                "Your reservation for vehicle " + savedReservation.getVehicle().getBrand() + " " + savedReservation.getVehicle().getModel() + " has been cancelled.",
+                "Your reservation for vehicle " + savedReservation.getVehicle().getBrand().getName() + " " + savedReservation.getVehicle().getModel().getName() + " has been cancelled.",
                 java.util.Map.of(
                         "reservationId", savedReservation.getId(),
                         "vehicle", savedReservation.getVehicle().getBrand() + " " + savedReservation.getVehicle().getModel()
@@ -237,5 +249,143 @@ public class ReservationService {
         );
 
         return reservationMapper.toDetailedDto(savedReservation);
+    }
+
+    /**
+     * Get blocked dates for a vehicle based on existing reservations
+     */
+    public List<String> getBlockedDatesForVehicle(Long vehicleId, LocalDateTime startDate, LocalDateTime endDate) {
+        List<Reservation> overlappingReservations = reservationRepository.findOverlappingReservations(
+            vehicleId, startDate, endDate);
+        
+        Set<String> blockedDates = new HashSet<>();
+        
+        for (Reservation reservation : overlappingReservations) {
+            LocalDateTime current = reservation.getStartDate().toLocalDate().atStartOfDay();
+            LocalDateTime reservationEnd = reservation.getEndDate().toLocalDate().atStartOfDay();
+            
+            while (current.isBefore(reservationEnd) || current.isEqual(reservationEnd)) {
+                blockedDates.add(current.toLocalDate().toString());
+                current = current.plusDays(1);
+            }
+        }
+        
+        return new ArrayList<>(blockedDates);
+    }
+
+    /**
+     * Gets available slots for a vehicle within a date range, supporting different booking types.
+     *
+     * @param vehicleId The ID of the vehicle
+     * @param startDate The start date for slot search
+     * @param endDate The end date for slot search
+     * @param bookingType The type of booking (HOURLY, DAILY, WEEKLY, CUSTOM)
+     * @return List of available slots
+     */
+    @Transactional(readOnly = true)
+    public List<SlotDto> getAvailableSlots(Long vehicleId, LocalDateTime startDate, LocalDateTime endDate, String bookingType) {
+        log.debug("Getting available slots for vehicle {} from {} to {} with booking type {}", vehicleId, startDate, endDate, bookingType);
+        
+        // Get the vehicle
+        var vehicledto = vehicleService.getVehicleById(vehicleId);
+        Vehicle vehicle = vehicleMapper.toEntity(vehicledto);
+        
+        // Generate slots based on booking type
+        return generateSlotsByBookingType(vehicle, startDate, endDate, bookingType);
+    }
+
+    /**
+     * Generates slots based on the booking type.
+     */
+    private List<SlotDto> generateSlotsByBookingType(Vehicle vehicle, LocalDateTime startDate, LocalDateTime endDate, String bookingType) {
+        List<SlotDto> allSlots;
+        
+        switch (bookingType.toUpperCase()) {
+            case "HOURLY":
+                allSlots = generateHourlySlots(vehicle, startDate, endDate);
+                break;
+            case "DAILY":
+                allSlots = generateDailySlots(vehicle, startDate, endDate);
+                break;
+            case "WEEKLY":
+                allSlots = generateWeeklySlots(vehicle, startDate, endDate);
+                break;
+            case "CUSTOM":
+            default:
+                // For custom or default, use the dynamic slot service
+                allSlots = dynamicSlotService.generateAvailableSlots(vehicle, startDate, endDate);
+                break;
+        }
+        
+        return allSlots;
+    }
+
+    /**
+     * Generates hourly slots for the vehicle.
+     */
+    private List<SlotDto> generateHourlySlots(Vehicle vehicle, LocalDateTime startDate, LocalDateTime endDate) {
+        List<SlotDto> slots = new ArrayList<>();
+        LocalDateTime current = startDate;
+        
+        while (current.isBefore(endDate)) {
+            LocalDateTime slotEnd = current.plusHours(1);
+            if (slotEnd.isAfter(endDate)) {
+                slotEnd = endDate;
+            }
+            
+            // Check if this hour slot is available
+            List<SlotDto> hourSlots = dynamicSlotService.generateAvailableSlots(vehicle, current, slotEnd);
+            slots.addAll(hourSlots);
+            
+            current = current.plusHours(1);
+        }
+        
+        return slots;
+    }
+
+    /**
+     * Generates daily slots for the vehicle.
+     */
+    private List<SlotDto> generateDailySlots(Vehicle vehicle, LocalDateTime startDate, LocalDateTime endDate) {
+        List<SlotDto> slots = new ArrayList<>();
+        LocalDateTime current = startDate.toLocalDate().atStartOfDay();
+        
+        while (current.isBefore(endDate)) {
+            LocalDateTime slotEnd = current.plusDays(1);
+            if (slotEnd.isAfter(endDate)) {
+                slotEnd = endDate;
+            }
+            
+            // Check if this day is available
+            List<SlotDto> daySlots = dynamicSlotService.generateAvailableSlots(vehicle, current, slotEnd);
+            slots.addAll(daySlots);
+            
+            current = current.plusDays(1);
+        }
+        
+        return slots;
+    }
+
+    /**
+     * Generates weekly slots for the vehicle.
+     */
+    private List<SlotDto> generateWeeklySlots(Vehicle vehicle, LocalDateTime startDate, LocalDateTime endDate) {
+        List<SlotDto> slots = new ArrayList<>();
+        LocalDateTime current = startDate.toLocalDate().atStartOfDay();
+        
+        while (current.isBefore(endDate)) {
+            LocalDateTime slotEnd = current.plusWeeks(1);
+            if (slotEnd.isAfter(endDate)) {
+                slotEnd = endDate;
+            }
+            
+            // Check if this week is available
+            List<SlotDto> weekSlots = dynamicSlotService.generateAvailableSlots(vehicle, current, slotEnd);
+            slots.addAll(weekSlots);
+            
+            current = current.plusWeeks(1);
+        }
+        
+        return slots;
     }
 }

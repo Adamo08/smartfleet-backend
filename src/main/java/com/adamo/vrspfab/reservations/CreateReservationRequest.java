@@ -21,7 +21,6 @@ public class CreateReservationRequest {
     @NotNull(message = "Vehicle ID cannot be null.")
     private Long vehicleId;
 
-
     /**
      * The start date and time for the reservation.
      * Must not be null and must be in the future.
@@ -44,4 +43,10 @@ public class CreateReservationRequest {
      */
     @Size(max = 500, message = "Comment must not exceed 500 characters.")
     private String comment;
+
+    /**
+     * Optional booking context containing additional booking preferences and details.
+     * This field is not required and can be null.
+     */
+    private ReservationBookingContext bookingContext;
 }

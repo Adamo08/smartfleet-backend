@@ -76,6 +76,21 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long>,
      * @return the number of reservations with the given status
      */
     Long countByStatus(ReservationStatus status);
+
+    /**
+     * Counts reservations created between two dates.
+     *
+     * @param startDate the start date
+     * @param endDate the end date
+     * @return the number of reservations created in the date range
+     */
+    Long countByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
+
+    /**
+     * Count reservations by vehicle ID and status list
+     */
+    Long countByVehicleIdAndStatusIn(Long vehicleId, List<ReservationStatus> statuses);
+
     @EntityGraph(attributePaths = {"user", "vehicle", "slots"}, type = EntityGraph.EntityGraphType.LOAD)
     Page<Reservation> findByUserId(Long id, Pageable pageable);
 }

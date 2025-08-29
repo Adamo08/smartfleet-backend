@@ -2,10 +2,10 @@ package com.adamo.vrspfab.reservations;
 
 import com.adamo.vrspfab.notifications.NotificationService;
 import com.adamo.vrspfab.notifications.NotificationType;
-import com.adamo.vrspfab.slots.Slot;
 import com.adamo.vrspfab.slots.SlotRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class AdminReservationService {
 
     private final ReservationRepository reservationRepository;
@@ -73,48 +74,57 @@ public class AdminReservationService {
             );
         }
 
-        if (oldStatus == newStatus) {
-            return reservationMapper.toDetailedDto(reservation);
+        // Update comment if provided
+        if (request.getComment() != null) {
+            reservation.setComment(request.getComment());
         }
 
-        reservation.setStatus(newStatus);
-        Reservation savedReservation = reservationRepository.save(reservation);
+        // Only save if there are actual changes
+        if (oldStatus != newStatus || request.getComment() != null) {
+            reservation.setStatus(newStatus);
+            reservation = reservationRepository.save(reservation);
+        }
+
+        // Log admin notes if provided (without saving to reservation)
+        if (request.getAdminNotes() != null && !request.getAdminNotes().trim().isEmpty()) {
+            log.info("Admin notes for reservation {}: {}", id, request.getAdminNotes());
+        }
 
         // Notify user on status change
         if (oldStatus == ReservationStatus.PENDING && newStatus == ReservationStatus.CONFIRMED) {
             notificationService.createAndDispatchNotification(
-                    savedReservation.getUser(),
+                    reservation.getUser(),
                     NotificationType.RESERVATION_CONFIRMED,
-                    "Admin has confirmed your reservation for vehicle " + savedReservation.getVehicle().getBrand() + " " + savedReservation.getVehicle().getModel() + ".",
+                    "Admin has confirmed your reservation for vehicle " + reservation.getVehicle().getBrand() + " " + reservation.getVehicle().getModel() + ".",
                     java.util.Map.of(
-                            "reservationId", savedReservation.getId(),
-                            "vehicle", savedReservation.getVehicle().getBrand() + " " + savedReservation.getVehicle().getModel(),
-                            "start", savedReservation.getStartDate(),
-                            "end", savedReservation.getEndDate()
+                            "reservationId", reservation.getId(),
+                            "vehicle", reservation.getVehicle().getBrand() + " " + reservation.getVehicle().getModel(),
+                            "start", reservation.getStartDate(),
+                            "end", reservation.getEndDate()
                     )
             );
         } else if (newStatus == ReservationStatus.CANCELLED) {
             notificationService.createAndDispatchNotification(
-                    savedReservation.getUser(),
+                    reservation.getUser(),
                     NotificationType.RESERVATION_CANCELLED,
-                    "Your reservation for vehicle " + savedReservation.getVehicle().getBrand() + " " + savedReservation.getVehicle().getModel() + " has been cancelled by an admin.",
+                    "Your reservation for vehicle " + reservation.getVehicle().getBrand() + " " + reservation.getVehicle().getModel() + " has been cancelled by an admin.",
                     java.util.Map.of(
-                            "reservationId", savedReservation.getId(),
-                            "vehicle", savedReservation.getVehicle().getBrand() + " " + savedReservation.getVehicle().getModel()
+                            "reservationId", reservation.getId(),
+                            "vehicle", reservation.getVehicle().getBrand() + " " + reservation.getVehicle().getModel()
                     )
             );
         }
 
         // Update slot availability if cancelled
-        if (newStatus == ReservationStatus.CANCELLED && savedReservation.getSlots() != null && !savedReservation.getSlots().isEmpty()) {
-            savedReservation.getSlots().forEach(slot -> {
+        if (newStatus == ReservationStatus.CANCELLED && reservation.getSlots() != null && !reservation.getSlots().isEmpty()) {
+            reservation.getSlots().forEach(slot -> {
                 slot.setAvailable(true);
                 slot.setReservation(null); // Dissociate from reservation
                 slotRepository.save(slot);
             });
         }
 
-        return reservationMapper.toDetailedDto(savedReservation);
+        return reservationMapper.toDetailedDto(reservation);
     }
 
 

@@ -23,4 +23,5 @@ public class DetailedReservationDto {
     private String comment;
     private ReservationStatus status;
     private LocalDateTime createdAt;
+    private ReservationBookingContext bookingContext;
 }
