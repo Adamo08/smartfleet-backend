@@ -2,6 +2,7 @@ package com.adamo.vrspfab.vehicles.mappers;
 import com.adamo.vrspfab.vehicles.Vehicle;
 import com.adamo.vrspfab.vehicles.VehicleDto;
 import com.adamo.vrspfab.vehicles.VehicleSummaryDto;
+import com.adamo.vrspfab.vehicles.dto.VehicleResponseDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -53,4 +54,12 @@ public interface VehicleMapper {
     @Mapping(target = "year", source = "year")
     @Mapping(target = "imageUrl", source = "imageUrl")
     VehicleSummaryDto toSummaryDto(Vehicle vehicle);
+
+    @Mapping(target = "categoryId", source = "category.id")
+    @Mapping(target = "categoryName", source = "category.name")
+    @Mapping(target = "brandId", source = "brand.id")
+    @Mapping(target = "brandName", source = "brand.name")
+    @Mapping(target = "modelId", source = "model.id")
+    @Mapping(target = "modelName", source = "model.name")
+    VehicleResponseDto toResponseDto(Vehicle vehicle);
 }

@@ -124,4 +124,20 @@ public class AdminVehicleModelController {
         VehicleModelResponseDto updatedModel = modelService.toggleModelStatus(id);
         return ResponseEntity.ok(updatedModel);
     }
+    
+    @GetMapping("/{id}/status-info")
+    @Operation(summary = "Get model status information",
+               description = "Retrieves information about vehicles that would be affected by deactivating this model. Requires admin privileges.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Status information retrieved successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges"),
+                       @ApiResponse(responseCode = "404", description = "Model not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    public ResponseEntity<VehicleStatusInfo> getModelStatusInfo(@PathVariable Long id) {
+        log.info("Admin requested status info for vehicle model with ID: {}", id);
+        VehicleStatusInfo statusInfo = modelService.getModelStatusInfo(id);
+        return ResponseEntity.ok(statusInfo);
+    }
 }

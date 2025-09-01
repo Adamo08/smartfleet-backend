@@ -124,4 +124,20 @@ public class AdminVehicleCategoryController {
         VehicleCategoryResponseDto updatedCategory = categoryService.toggleCategoryStatus(id);
         return ResponseEntity.ok(updatedCategory);
     }
+    
+    @GetMapping("/{id}/status-info")
+    @Operation(summary = "Get category status information",
+               description = "Retrieves information about vehicles that would be affected by deactivating this category. Requires admin privileges.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Status information retrieved successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges"),
+                       @ApiResponse(responseCode = "404", description = "Category not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    public ResponseEntity<VehicleStatusInfo> getCategoryStatusInfo(@PathVariable Long id) {
+        log.info("Admin requested status info for vehicle category with ID: {}", id);
+        VehicleStatusInfo statusInfo = categoryService.getCategoryStatusInfo(id);
+        return ResponseEntity.ok(statusInfo);
+    }
 }

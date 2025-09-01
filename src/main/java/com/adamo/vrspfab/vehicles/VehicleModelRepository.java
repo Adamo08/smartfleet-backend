@@ -18,4 +18,17 @@ public interface VehicleModelRepository extends JpaRepository<VehicleModel, Long
      * Find models by brand ID
      */
     List<VehicleModel> findByBrandId(Long brandId);
+    
+    /**
+     * Find only active models for customer-facing interfaces.
+     * Inactive models should not appear in booking dropdowns.
+     */
+    List<VehicleModel> findByIsActiveTrue();
+    
+    /**
+     * Find active models by brand ID for customer dropdowns.
+     * Only shows models that are active AND belong to an active brand.
+     */
+    @Query("SELECT m FROM VehicleModel m WHERE m.brand.id = :brandId AND m.isActive = true AND m.brand.isActive = true")
+    List<VehicleModel> findActiveModelsByBrandId(Long brandId);
 }

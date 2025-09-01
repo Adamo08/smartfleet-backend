@@ -10,8 +10,12 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Admin-specific vehicle specification that doesn't filter by active status.
+ * This allows admins to see and manage vehicles with inactive brands/categories/models.
+ */
 @RequiredArgsConstructor
-public class VehicleSpecification implements Specification<Vehicle> {
+public class AdminVehicleSpecification implements Specification<Vehicle> {
 
     private final VehicleFilter filter;
 
@@ -19,11 +23,8 @@ public class VehicleSpecification implements Specification<Vehicle> {
     public Predicate toPredicate(Root<Vehicle> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
         List<Predicate> predicates = new ArrayList<>();
 
-        // BUSINESS RULE: Only show vehicles with active brand, category, and model for customer-facing queries
-        // This ensures inactive brands/categories/models don't appear in customer bookings
-        predicates.add(criteriaBuilder.isTrue(root.join("brand").get("isActive")));
-        predicates.add(criteriaBuilder.isTrue(root.join("category").get("isActive")));
-        predicates.add(criteriaBuilder.isTrue(root.join("model").get("isActive")));
+        // NOTE: Admin specification does NOT filter by active status
+        // This allows admins to manage all vehicles regardless of brand/category/model status
 
         if (filter.getSearch() != null && !filter.getSearch().trim().isEmpty()) {
             String searchPattern = "%" + filter.getSearch().toLowerCase() + "%";

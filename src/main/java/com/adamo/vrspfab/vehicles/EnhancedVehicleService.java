@@ -8,6 +8,8 @@ import com.adamo.vrspfab.vehicles.dto.UpdateVehicleDto;
 import com.adamo.vrspfab.vehicles.dto.VehicleResponseDto;
 import com.adamo.vrspfab.vehicles.exceptions.*;
 import com.adamo.vrspfab.vehicles.mappers.EnhancedVehicleMapper;
+import com.adamo.vrspfab.notifications.NotificationService;
+import com.adamo.vrspfab.notifications.NotificationType;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,7 @@ public class EnhancedVehicleService {
     private final EnhancedVehicleMapper vehicleMapper;
     private final ActivityEventListener activityEventListener;
     private final SecurityUtilsService securityUtilsService;
+    private final NotificationService notificationService;
 
     /**
      * Creates a new vehicle with comprehensive validation.
@@ -70,6 +73,24 @@ public class EnhancedVehicleService {
             activityEventListener.recordVehicleCreated(savedVehicle.getId(), vehicleName, currentUser);
         } catch (Exception e) {
             log.warn("Could not record vehicle creation activity: {}", e.getMessage());
+        }
+        
+        // Notify admins about new vehicle creation
+        try {
+            notificationService.notifyAllAdmins(
+                    NotificationType.GENERAL_UPDATE,
+                    "New vehicle added to fleet: " + savedVehicle.getBrand().getName() + " " + savedVehicle.getModel().getName(),
+                    java.util.Map.of(
+                            "vehicleId", savedVehicle.getId(),
+                            "licensePlate", savedVehicle.getLicensePlate(),
+                            "brand", savedVehicle.getBrand().getName(),
+                            "model", savedVehicle.getModel().getName(),
+                            "year", savedVehicle.getYear(),
+                            "category", savedVehicle.getCategory().getName()
+                    )
+            );
+        } catch (Exception ignored) {
+            // Do not block vehicle creation on notification issues
         }
         
         return vehicleMapper.toResponseDto(savedVehicle);
@@ -112,6 +133,22 @@ public class EnhancedVehicleService {
         
         List<Vehicle> savedVehicles = vehicleRepository.saveAll(vehicles);
         log.info("Successfully created {} vehicles in bulk", savedVehicles.size());
+        
+        // Notify admins about bulk vehicle creation
+        try {
+            notificationService.notifyAllAdmins(
+                    NotificationType.GENERAL_UPDATE,
+                    "Bulk vehicle creation completed: " + savedVehicles.size() + " vehicles added to fleet",
+                    java.util.Map.of(
+                            "vehicleCount", savedVehicles.size(),
+                            "vehicles", savedVehicles.stream()
+                                    .map(v -> v.getBrand().getName() + " " + v.getModel().getName() + " (" + v.getLicensePlate() + ")")
+                                    .collect(Collectors.joining(", "))
+                    )
+            );
+        } catch (Exception ignored) {
+            // Do not block bulk creation on notification issues
+        }
         
         return savedVehicles.stream()
                 .map(vehicleMapper::toResponseDto)
@@ -187,6 +224,24 @@ public class EnhancedVehicleService {
         vehicleMapper.updateVehicleFromDto(updateDto, vehicle);
         Vehicle updatedVehicle = vehicleRepository.save(vehicle);
         log.info("Vehicle with ID {} updated successfully", id);
+        
+        // Notify admins about vehicle update
+        try {
+            notificationService.notifyAllAdmins(
+                    NotificationType.GENERAL_UPDATE,
+                    "Vehicle updated: " + updatedVehicle.getBrand().getName() + " " + updatedVehicle.getModel().getName() + " (" + updatedVehicle.getLicensePlate() + ")",
+                    java.util.Map.of(
+                            "vehicleId", updatedVehicle.getId(),
+                            "licensePlate", updatedVehicle.getLicensePlate(),
+                            "brand", updatedVehicle.getBrand().getName(),
+                            "model", updatedVehicle.getModel().getName(),
+                            "action", "updated"
+                    )
+            );
+        } catch (Exception ignored) {
+            // Do not block vehicle update on notification issues
+        }
+        
         return vehicleMapper.toResponseDto(updatedVehicle);
     }
 
@@ -220,6 +275,25 @@ public class EnhancedVehicleService {
         vehicle.setStatus(newStatus);
         Vehicle updatedVehicle = vehicleRepository.save(vehicle);
         log.info("Status of vehicle with ID {} updated to {} successfully", id, newStatus);
+        
+        // Notify admins about vehicle status change
+        try {
+            notificationService.notifyAllAdmins(
+                    NotificationType.MAINTENANCE_NOTIFICATION,
+                    "Vehicle status changed: " + updatedVehicle.getBrand().getName() + " " + updatedVehicle.getModel().getName() + " is now " + newStatus.name(),
+                    java.util.Map.of(
+                            "vehicleId", updatedVehicle.getId(),
+                            "licensePlate", updatedVehicle.getLicensePlate(),
+                            "brand", updatedVehicle.getBrand().getName(),
+                            "model", updatedVehicle.getModel().getName(),
+                            "oldStatus", vehicle.getStatus().name(),
+                            "newStatus", newStatus.name()
+                    )
+            );
+        } catch (Exception ignored) {
+            // Do not block status update on notification issues
+        }
+        
         return vehicleMapper.toResponseDto(updatedVehicle);
     }
 
@@ -253,6 +327,29 @@ public class EnhancedVehicleService {
         vehicle.setMileage(newMileage);
         Vehicle updatedVehicle = vehicleRepository.save(vehicle);
         log.info("Mileage of vehicle with ID {} updated to {} successfully", id, newMileage);
+        
+        // Notify admins about mileage update if significant change
+        float mileageDifference = newMileage - vehicle.getMileage();
+        if (mileageDifference > 1000) { // Only notify for significant mileage changes
+            try {
+                notificationService.notifyAllAdmins(
+                        NotificationType.MAINTENANCE_NOTIFICATION,
+                        "Vehicle mileage updated: " + updatedVehicle.getBrand().getName() + " " + updatedVehicle.getModel().getName() + " - " + mileageDifference + " km added",
+                        java.util.Map.of(
+                                "vehicleId", updatedVehicle.getId(),
+                                "licensePlate", updatedVehicle.getLicensePlate(),
+                                "brand", updatedVehicle.getBrand().getName(),
+                                "model", updatedVehicle.getModel().getName(),
+                                "oldMileage", vehicle.getMileage(),
+                                "newMileage", newMileage,
+                                "mileageDifference", mileageDifference
+                        )
+                );
+            } catch (Exception ignored) {
+                // Do not block mileage update on notification issues
+            }
+        }
+        
         return vehicleMapper.toResponseDto(updatedVehicle);
     }
 
@@ -275,6 +372,23 @@ public class EnhancedVehicleService {
 
         vehicleRepository.deleteById(id);
         log.info("Vehicle with ID {} deleted successfully", id);
+        
+        // Notify admins about vehicle deletion
+        try {
+            notificationService.notifyAllAdmins(
+                    NotificationType.SYSTEM_ALERT,
+                    "Vehicle deleted from fleet: " + vehicle.getBrand().getName() + " " + vehicle.getModel().getName() + " (" + vehicle.getLicensePlate() + ")",
+                    java.util.Map.of(
+                            "vehicleId", vehicle.getId(),
+                            "licensePlate", vehicle.getLicensePlate(),
+                            "brand", vehicle.getBrand().getName(),
+                            "model", vehicle.getModel().getName(),
+                            "action", "deleted"
+                    )
+            );
+        } catch (Exception ignored) {
+            // Do not block vehicle deletion on notification issues
+        }
     }
 
     /**

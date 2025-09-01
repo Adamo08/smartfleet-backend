@@ -4,6 +4,8 @@ import com.adamo.vrspfab.common.ResourceNotFoundException;
 import com.adamo.vrspfab.reservations.*;
 import com.adamo.vrspfab.vehicles.exceptions.*;
 import com.adamo.vrspfab.vehicles.mappers.VehicleMapper;
+import com.adamo.vrspfab.notifications.NotificationService;
+import com.adamo.vrspfab.notifications.NotificationType;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +13,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.jpa.domain.Specification;
+
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,6 +38,7 @@ public class VehicleService {
     private final VehicleCategoryRepository vehicleCategoryRepository;
     private final VehicleBrandRepository vehicleBrandRepository;
     private final VehicleModelRepository vehicleModelRepository;
+    private final NotificationService notificationService;
 
     /**
      * Creates a new vehicle.
@@ -78,6 +83,24 @@ public class VehicleService {
         
         Vehicle savedVehicle = vehicleRepository.save(vehicle);
         log.info("Vehicle created successfully with ID: {}", savedVehicle.getId());
+        
+        // Notify admins about new vehicle creation
+        try {
+            notificationService.notifyAllAdmins(
+                    NotificationType.GENERAL_UPDATE,
+                    "New vehicle added to fleet: " + savedVehicle.getBrand().getName() + " " + savedVehicle.getModel().getName(),
+                    java.util.Map.of(
+                            "vehicleId", savedVehicle.getId(),
+                            "licensePlate", savedVehicle.getLicensePlate(),
+                            "brand", savedVehicle.getBrand().getName(),
+                            "model", savedVehicle.getModel().getName(),
+                            "year", savedVehicle.getYear()
+                    )
+            );
+        } catch (Exception ignored) {
+            // Do not block vehicle creation on notification issues
+        }
+        
         return vehicleMapper.toDto(savedVehicle);
     }
 
@@ -107,6 +130,23 @@ public class VehicleService {
                 .collect(Collectors.toList());
         List<Vehicle> savedVehicles = vehicleRepository.saveAll(vehicles);
         log.info("Successfully created {} vehicles in bulk", savedVehicles.size());
+        
+        // Notify admins about bulk vehicle creation
+        try {
+            notificationService.notifyAllAdmins(
+                    NotificationType.GENERAL_UPDATE,
+                    "Bulk vehicle creation completed: " + savedVehicles.size() + " vehicles added to fleet",
+                    java.util.Map.of(
+                            "vehicleCount", savedVehicles.size(),
+                            "vehicles", savedVehicles.stream()
+                                    .map(v -> v.getBrand().getName() + " " + v.getModel().getName() + " (" + v.getLicensePlate() + ")")
+                                    .collect(Collectors.joining(", "))
+                    )
+            );
+        } catch (Exception ignored) {
+            // Do not block bulk creation on notification issues
+        }
+        
         return savedVehicles.stream()
                 .map(vehicleMapper::toDto)
                 .collect(Collectors.toList());
@@ -255,6 +295,24 @@ public class VehicleService {
         vehicleMapper.updateVehicleFromDto(vehicleDto, vehicle);
         Vehicle updatedVehicle = vehicleRepository.save(vehicle);
         log.info("Vehicle with ID {} updated successfully.", id);
+        
+        // Notify admins about vehicle update
+        try {
+            notificationService.notifyAllAdmins(
+                    NotificationType.GENERAL_UPDATE,
+                    "Vehicle updated: " + updatedVehicle.getBrand().getName() + " " + updatedVehicle.getModel().getName() + " (" + updatedVehicle.getLicensePlate() + ")",
+                    java.util.Map.of(
+                            "vehicleId", updatedVehicle.getId(),
+                            "licensePlate", updatedVehicle.getLicensePlate(),
+                            "brand", updatedVehicle.getBrand().getName(),
+                            "model", updatedVehicle.getModel().getName(),
+                            "action", "updated"
+                    )
+            );
+        } catch (Exception ignored) {
+            // Do not block vehicle update on notification issues
+        }
+        
         return vehicleMapper.toDto(updatedVehicle);
     }
 
@@ -295,6 +353,25 @@ public class VehicleService {
         vehicle.setStatus(newStatus);
         Vehicle updatedVehicle = vehicleRepository.save(vehicle);
         log.info("Status of vehicle with ID {} updated to {} successfully.", id, newStatus);
+        
+        // Notify admins about vehicle status change
+        try {
+            notificationService.notifyAllAdmins(
+                    NotificationType.MAINTENANCE_NOTIFICATION,
+                    "Vehicle status changed: " + updatedVehicle.getBrand().getName() + " " + updatedVehicle.getModel().getName() + " is now " + newStatus.name(),
+                    java.util.Map.of(
+                            "vehicleId", updatedVehicle.getId(),
+                            "licensePlate", updatedVehicle.getLicensePlate(),
+                            "brand", updatedVehicle.getBrand().getName(),
+                            "model", updatedVehicle.getModel().getName(),
+                            "oldStatus", vehicle.getStatus().name(),
+                            "newStatus", newStatus.name()
+                    )
+            );
+        } catch (Exception ignored) {
+            // Do not block status update on notification issues
+        }
+        
         return vehicleMapper.toDto(updatedVehicle);
     }
 
@@ -336,6 +413,29 @@ public class VehicleService {
         vehicle.setMileage(newMileage);
         Vehicle updatedVehicle = vehicleRepository.save(vehicle);
         log.info("Mileage of vehicle with ID {} updated to {} successfully.", id, newMileage);
+        
+        // Notify admins about mileage update if significant change
+        float mileageDifference = newMileage - vehicle.getMileage();
+        if (mileageDifference > 1000) { // Only notify for significant mileage changes
+            try {
+                notificationService.notifyAllAdmins(
+                        NotificationType.MAINTENANCE_NOTIFICATION,
+                        "Vehicle mileage updated: " + updatedVehicle.getBrand().getName() + " " + updatedVehicle.getModel().getName() + " - " + mileageDifference + " km added",
+                        java.util.Map.of(
+                                "vehicleId", updatedVehicle.getId(),
+                                "licensePlate", updatedVehicle.getLicensePlate(),
+                                "brand", updatedVehicle.getBrand().getName(),
+                                "model", updatedVehicle.getModel().getName(),
+                                "oldMileage", vehicle.getMileage(),
+                                "newMileage", newMileage,
+                                "mileageDifference", mileageDifference
+                        )
+                );
+            } catch (Exception ignored) {
+                // Do not block mileage update on notification issues
+            }
+        }
+        
         return vehicleMapper.toDto(updatedVehicle);
     }
 
@@ -362,6 +462,23 @@ public class VehicleService {
 
         vehicleRepository.deleteById(id);
         log.info("Vehicle with ID {} deleted successfully.", id);
+        
+        // Notify admins about vehicle deletion
+        try {
+            notificationService.notifyAllAdmins(
+                    NotificationType.SYSTEM_ALERT,
+                    "Vehicle deleted from fleet: " + vehicle.getBrand().getName() + " " + vehicle.getModel().getName() + " (" + vehicle.getLicensePlate() + ")",
+                    java.util.Map.of(
+                            "vehicleId", vehicle.getId(),
+                            "licensePlate", vehicle.getLicensePlate(),
+                            "brand", vehicle.getBrand().getName(),
+                            "model", vehicle.getModel().getName(),
+                            "action", "deleted"
+                    )
+            );
+        } catch (Exception ignored) {
+            // Do not block vehicle deletion on notification issues
+        }
     }
 
     /**
@@ -399,6 +516,22 @@ public class VehicleService {
             throw new VehicleNotAvailableException("Vehicle is not available due to status: " + vehicle.getStatus().name());
         }
 
+        // BUSINESS RULE: Check if brand, category, or model are inactive
+        if (!vehicle.getBrand().getIsActive()) {
+            log.warn("Vehicle with ID {} is not available - brand '{}' is inactive", id, vehicle.getBrand().getName());
+            throw new VehicleNotAvailableException("Vehicle is not available - brand is inactive");
+        }
+        
+        if (!vehicle.getCategory().getIsActive()) {
+            log.warn("Vehicle with ID {} is not available - category '{}' is inactive", id, vehicle.getCategory().getName());
+            throw new VehicleNotAvailableException("Vehicle is not available - category is inactive");
+        }
+        
+        if (!vehicle.getModel().getIsActive()) {
+            log.warn("Vehicle with ID {} is not available - model '{}' is inactive", id, vehicle.getModel().getName());
+            throw new VehicleNotAvailableException("Vehicle is not available - model is inactive");
+        }
+
         boolean hasConflictingReservations = vehicle.getReservations().stream()
                 .anyMatch(reservation ->
                         !(endDate.isBefore(reservation.getStartDate()) || startDate.isAfter(reservation.getEndDate()))
@@ -424,6 +557,38 @@ public class VehicleService {
         log.info("Vehicle with ID {} is available from {} to {}.", id, startDate, endDate);
         return true;
     }
+
+    /**
+     * Checks if a vehicle is available for customer booking, including inactive status checks.
+     * This method is specifically for customer-facing booking requests.
+     *
+     * @param id The ID of the vehicle.
+     * @param startDate The start date of the booking.
+     * @param endDate The end date of the booking.
+     * @return True if the vehicle is available for booking, false otherwise.
+     */
+    @Transactional(readOnly = true)
+    public boolean isVehicleAvailableForBooking(Long id, LocalDateTime startDate, LocalDateTime endDate) {
+        try {
+            // This will throw exceptions if vehicle is not available
+            return isVehicleAvailable(id, startDate, endDate);
+        } catch (VehicleNotAvailableException e) {
+            log.debug("Vehicle {} not available for booking: {}", id, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get all vehicles using a specification (for customer-facing APIs with active filtering).
+     */
+    @Transactional(readOnly = true)
+    public Page<VehicleDto> getAllVehicles(Specification<Vehicle> specification, Pageable pageable) {
+        log.info("Fetching vehicles with customer specification (active filtering enabled)");
+        Page<Vehicle> vehiclesPage = vehicleRepository.findAll(specification, pageable);
+        return vehiclesPage.map(vehicleMapper::toDto);
+    }
+
+
 
     /**
      * Retrieves the reservation count for a vehicle.

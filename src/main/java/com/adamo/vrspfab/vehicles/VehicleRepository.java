@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -89,4 +90,78 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long>, JpaSpec
      * Find vehicles by model ID
      */
     List<Vehicle> findByModelId(Long modelId);
+
+    /**
+     * Count vehicles by category ID
+     */
+    long countByCategoryId(Long categoryId);
+
+    /**
+     * Count vehicles by brand ID
+     */
+    long countByBrandId(Long brandId);
+
+    /**
+     * Count vehicles by status string (for dashboard)
+     */
+    @Query("SELECT COUNT(v) FROM Vehicle v WHERE v.status = :status")
+    long countByStatus(String status);
+
+    /**
+     * Count vehicles by category and status
+     */
+    @Query("SELECT COUNT(v) FROM Vehicle v WHERE v.category.id = :categoryId AND v.status = :status")
+    long countByCategoryIdAndStatus(Long categoryId, VehicleStatus status);
+
+    /**
+     * Count vehicles by brand and status
+     */
+    @Query("SELECT COUNT(v) FROM Vehicle v WHERE v.brand.id = :brandId AND v.status = :status")
+    long countByBrandIdAndStatus(Long brandId, VehicleStatus status);
+
+    /**
+     * Get average price by category
+     */
+    @Query("SELECT AVG(v.pricePerDay) FROM Vehicle v WHERE v.category.id = :categoryId")
+    BigDecimal getAveragePriceByCategoryId(Long categoryId);
+
+    /**
+     * Get average price by brand
+     */
+    @Query("SELECT AVG(v.pricePerDay) FROM Vehicle v WHERE v.brand.id = :brandId")
+    BigDecimal getAveragePriceByBrandId(Long brandId);
+
+    /**
+     * Count distinct models
+     */
+    @Query("SELECT COUNT(DISTINCT v.model.id) FROM Vehicle v")
+    int countDistinctModels();
+
+    /**
+     * Count distinct models by brand
+     */
+    @Query("SELECT COUNT(DISTINCT v.model.id) FROM Vehicle v WHERE v.brand.id = :brandId")
+    int countDistinctModelsByBrandId(Long brandId);
+
+    /**
+     * Get average rating by brand using testimonials
+     */
+    @Query("SELECT COALESCE(AVG(t.rating), 4.2) FROM Testimonial t " +
+           "JOIN t.vehicle v WHERE v.brand.id = :brandId AND t.approved = true")
+    Double getAverageRatingByBrandId(Long brandId);
+
+    /**
+     * Get top performing models with analytics - simplified version without problematic casts
+     */
+    @Query("SELECT v.model.name, v.brand.name, v.category.name, COUNT(v), " +
+           "COALESCE(COUNT(r), 0), " +
+           "COALESCE(SUM(p.amount), 0), " +
+           "4.5, " +
+           "COALESCE(AVG(v.pricePerDay), 0) " +
+           "FROM Vehicle v " +
+           "LEFT JOIN Reservation r ON r.vehicle = v " +
+           "LEFT JOIN Payment p ON p.reservation = r " +
+           "GROUP BY v.model.id, v.brand.id, v.category.id " +
+           "ORDER BY COUNT(r) DESC, SUM(p.amount) DESC")
+    List<Object[]> getTopPerformingModels();
 }

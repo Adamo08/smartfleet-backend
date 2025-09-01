@@ -124,4 +124,20 @@ public class AdminVehicleBrandController {
         VehicleBrandResponseDto updatedBrand = brandService.toggleBrandStatus(id);
         return ResponseEntity.ok(updatedBrand);
     }
+    
+    @GetMapping("/{id}/status-info")
+    @Operation(summary = "Get brand status information",
+               description = "Retrieves information about vehicles that would be affected by deactivating this brand. Requires admin privileges.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Status information retrieved successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges"),
+                       @ApiResponse(responseCode = "404", description = "Brand not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    public ResponseEntity<VehicleStatusInfo> getBrandStatusInfo(@PathVariable Long id) {
+        log.info("Admin requested status info for vehicle brand with ID: {}", id);
+        VehicleStatusInfo statusInfo = brandService.getBrandStatusInfo(id);
+        return ResponseEntity.ok(statusInfo);
+    }
 }

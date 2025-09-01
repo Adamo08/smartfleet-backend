@@ -1,5 +1,7 @@
 package com.adamo.vrspfab.vehicles;
 
+import com.adamo.vrspfab.reservations.ReservationRepository;
+import com.adamo.vrspfab.reservations.ReservationStatus;
 import com.adamo.vrspfab.vehicles.dto.CreateVehicleModelDto;
 import com.adamo.vrspfab.vehicles.dto.UpdateVehicleModelDto;
 import com.adamo.vrspfab.vehicles.dto.VehicleModelResponseDto;
@@ -17,6 +19,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -26,6 +30,8 @@ public class VehicleModelService {
     private final VehicleModelRepository modelRepository;
     private final VehicleBrandRepository brandRepository;
     private final EnhancedVehicleModelMapper modelMapper;
+    private final VehicleRepository vehicleRepository;
+    private final ReservationRepository reservationRepository;
 
     @Transactional(readOnly = true)
     @Cacheable(value = "vehicleModels", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
@@ -109,10 +115,95 @@ public class VehicleModelService {
         VehicleModel model = modelRepository.findById(id)
                 .orElseThrow(() -> new VehicleModelNotFoundException(id));
 
+        boolean wasActive = model.getIsActive();
         model.setIsActive(!model.getIsActive());
         VehicleModel updatedModel = modelRepository.save(model);
-        log.info("Vehicle model status toggled successfully for ID: {}", id);
+        
+        // Log business impact
+        if (wasActive && !updatedModel.getIsActive()) {
+            log.warn("Model '{}' (ID: {}) deactivated - vehicles of this model will no longer be available for booking", 
+                    updatedModel.getName(), id);
+        } else if (!wasActive && updatedModel.getIsActive()) {
+            log.info("Model '{}' (ID: {}) activated - vehicles of this model are now available for booking", 
+                    updatedModel.getName(), id);
+        }
+        
         return modelMapper.toResponseDto(updatedModel);
+    }
+
+    /**
+     * Get only active models for customer-facing dropdowns and filters.
+     * This ensures inactive models don't appear in booking interfaces.
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(value = "activeModels")
+    public java.util.List<VehicleModelResponseDto> getActiveModels() {
+        log.info("Fetching only active vehicle models for customer interface");
+        java.util.List<VehicleModel> activeModels = modelRepository.findByIsActiveTrue();
+        return activeModels.stream()
+                .map(modelMapper::toResponseDto)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Get active models for a specific brand for customer dropdowns.
+     * Only returns models that are active AND belong to an active brand.
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(value = "activeModelsByBrand", key = "#brandId")
+    public java.util.List<VehicleModelResponseDto> getActiveModelsByBrandId(Long brandId) {
+        log.info("Fetching active vehicle models for brand ID: {}", brandId);
+        java.util.List<VehicleModel> activeModels = modelRepository.findActiveModelsByBrandId(brandId);
+        return activeModels.stream()
+                .map(modelMapper::toResponseDto)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Get status information for vehicles that would be affected by deactivating this model
+     */
+    @Transactional(readOnly = true)
+    public VehicleStatusInfo getModelStatusInfo(Long id) {
+        log.info("Getting status info for vehicle model with ID: {}", id);
+        
+        // Verify model exists
+        VehicleModel model = modelRepository.findById(id)
+                .orElseThrow(() -> new VehicleModelNotFoundException(id));
+        
+        // Get all vehicles for this model
+        List<Vehicle> vehicles = vehicleRepository.findByModelId(id);
+        
+        // Count active and inactive vehicles
+        long activeVehicles = vehicles.stream()
+                .mapToLong(vehicle -> vehicle.getStatus() == VehicleStatus.AVAILABLE ? 1 : 0)
+                .sum();
+        
+        long inactiveVehicles = vehicles.size() - activeVehicles;
+        
+        // Check for active reservations (pending or confirmed)
+        boolean hasActiveReservations = false;
+        int futureReservations = 0;
+        
+        for (Vehicle vehicle : vehicles) {
+            Long activeCount = reservationRepository.countByVehicleIdAndStatusIn(
+                    vehicle.getId(),
+                    List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED)
+            );
+            
+            if (activeCount > 0) {
+                hasActiveReservations = true;
+                futureReservations += activeCount.intValue();
+            }
+        }
+        
+        return VehicleStatusInfo.builder()
+                .totalVehicles(vehicles.size())
+                .affectedVehicles(vehicles.size()) // All vehicles will be affected
+                .activeVehicles((int) activeVehicles)
+                .inactiveVehicles((int) inactiveVehicles)
+                .hasActiveReservations(hasActiveReservations)
+                .futureReservations(futureReservations)
+                .build();
     }
 
     // Legacy method for backward compatibility - delegates to new implementation
