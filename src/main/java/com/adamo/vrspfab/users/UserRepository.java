@@ -60,4 +60,12 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
      * @return the number of users with the given role
      */
     Long countByRole(Role role);
+
+    /**
+     * Finds all users with a specific role.
+     *
+     * @param role the role to find users by
+     * @return a list of users with the given role
+     */
+    List<User> findByRole(Role role);
 }

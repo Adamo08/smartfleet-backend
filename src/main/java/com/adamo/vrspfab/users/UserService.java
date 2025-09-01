@@ -4,7 +4,10 @@ package com.adamo.vrspfab.users;
 import com.adamo.vrspfab.common.DuplicateFieldException;
 import com.adamo.vrspfab.common.SecurityUtilsService;
 import com.adamo.vrspfab.notifications.EmailService;
+import org.springframework.context.ApplicationEventPublisher;
 import com.adamo.vrspfab.dashboard.ActivityEventListener;
+import com.adamo.vrspfab.users.events.UserRegisteredEvent;
+import com.adamo.vrspfab.users.events.UserRoleChangedEvent;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +28,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final ActivityEventListener activityEventListener;
+    private final ApplicationEventPublisher eventPublisher;
 
     public Page<UserDto> getAllUsers(PageRequest pageable, String searchTerm, String role) {
         UserSpecification spec = new UserSpecification(searchTerm, role);
@@ -59,6 +63,9 @@ public class UserService {
         // Record user registration activity
         activityEventListener.recordUserRegistration(savedUser);
 
+        // Publish user registered event
+        eventPublisher.publishEvent(new UserRegisteredEvent(this, savedUser));
+
         return userMapper.toDto(savedUser);
     }
 
@@ -86,6 +93,9 @@ public class UserService {
         
         user.setRole(role);
         User savedUser = userRepository.save(user);
+        
+        // Publish user role changed event
+        eventPublisher.publishEvent(new UserRoleChangedEvent(this, savedUser, Role.valueOf(oldRole.toUpperCase()), role));
         
         return userMapper.toDto(savedUser);
     }

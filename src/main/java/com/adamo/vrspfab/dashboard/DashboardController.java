@@ -69,4 +69,15 @@ public class DashboardController {
             @RequestParam(defaultValue = "30") int days) {
         return ResponseEntity.ok(dashboardService.getActivityStats(days));
     }
+
+    @Operation(summary = "Get vehicle breakdown data",
+               description = "Retrieves vehicle breakdown statistics by categories, brands, and statuses for dashboard analytics.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved vehicle breakdown data"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @GetMapping("/vehicle-breakdown")
+    public ResponseEntity<VehicleBreakdownDto> getVehicleBreakdown() {
+        return ResponseEntity.ok(dashboardService.getVehicleBreakdown());
+    }
 }
