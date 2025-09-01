@@ -32,4 +32,5 @@ public class BookmarkDto {
     private Long vehicleId;
     private String vehicleBrand;
     private String vehicleModel;
+    private String vehicleImageUrl;
 }

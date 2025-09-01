@@ -58,8 +58,7 @@ public class FavoriteService {
                     return new ResourceNotFoundException("User not found with ID: " + favoriteDto.getUserId(), "User");
                 });
 
-        var vehicleDto = vehicleService.getVehicleById(favoriteDto.getVehicleId());
-        Vehicle vehicle = vehicleMapper.toEntity(vehicleDto);
+        var vehicle = vehicleService.getVehicleById(favoriteDto.getVehicleId());
         if (vehicle == null) {
             logger.warn("Vehicle not found with ID: {}", favoriteDto.getVehicleId());
             throw new ResourceNotFoundException("Vehicle not found with ID: " + favoriteDto.getVehicleId(), "Vehicle");
@@ -74,7 +73,7 @@ public class FavoriteService {
 
         Favorite favorite = favoriteMapper.toEntity(favoriteDto);
         favorite.setUser(user);
-        favorite.setVehicle(vehicle);
+        favorite.setVehicle(vehicleMapper.toEntity(vehicle));
 
         Favorite savedFavorite = favoriteRepository.save(favorite);
         logger.info("Favorite created successfully with ID: {}", savedFavorite.getId());
@@ -84,7 +83,7 @@ public class FavoriteService {
             notificationService.createAndDispatchRealTimeOnly(
                     user,
                     NotificationType.FAVORITE_ADDED,
-                    "Added vehicle " + vehicle.getBrand().getName() + " " + vehicle.getModel().getName() + " to favorites.",
+                    "Added vehicle " + vehicle.getBrandName() + " " + vehicle.getModelName() + " to favorites.",
                     Map.of("vehicleId", vehicle.getId())
             );
             logger.info("✅ Successfully sent real-time notification for favorite addition to user: {}", user.getEmail());

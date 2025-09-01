@@ -19,7 +19,7 @@ public class BookmarkSecurityRules implements SecurityRules {
                 // Only ADMINs can view all bookmarks (with filters)
                 .requestMatchers(HttpMethod.GET, "/bookmarks").hasRole("ADMIN")
                 // Customers can create bookmarks (service will ensure it's for themselves and not a duplicate)
-                .requestMatchers(HttpMethod.POST, "/bookmarks").hasRole("CUSTOMER")
+                .requestMatchers(HttpMethod.POST, "/bookmarks").authenticated()
                 // Authenticated users (owner or admin) can delete bookmarks (service will ensure ownership/admin)
                 .requestMatchers(HttpMethod.DELETE, "/bookmarks/**").authenticated();
     }

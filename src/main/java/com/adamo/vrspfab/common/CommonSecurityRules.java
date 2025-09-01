@@ -9,7 +9,11 @@ public class CommonSecurityRules implements SecurityRules{
     @Override
     public void configure(AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry registry) {
         registry
-                // Publicly accessible endpoint for enums
-                .requestMatchers("/api/enums/**").permitAll();
+                // Publicly accessible endpoint for enums and home
+                .requestMatchers("/api/enums/**").permitAll()
+                .requestMatchers("/home").permitAll()
+                
+                // Admin-only access for admin panel endpoints
+                .requestMatchers("/admin/**").hasRole("ADMIN");
     }
 }

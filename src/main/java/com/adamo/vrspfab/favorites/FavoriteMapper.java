@@ -12,6 +12,7 @@ public interface FavoriteMapper {
     @Mapping(target = "userEmail", source = "user.email")
     @Mapping(target = "vehicleBrand", source = "vehicle.brand.name")
     @Mapping(target = "vehicleModel", source = "vehicle.model.name")
+    @Mapping(target = "vehicleImageUrl", source = "vehicle.imageUrl")
     FavoriteDto toDto(Favorite favorite);
 
     @Mapping(target = "user", ignore = true)

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
@@ -93,4 +94,15 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long>,
 
     @EntityGraph(attributePaths = {"user", "vehicle", "slots"}, type = EntityGraph.EntityGraphType.LOAD)
     Page<Reservation> findByUserId(Long id, Pageable pageable);
+
+    /**
+     * Get hourly utilization data for analytics - using JPQL compatible syntax
+     */
+    @Query("SELECT HOUR(r.startDate) as hour, COUNT(r) as reservations, " +
+            "(COUNT(r) * 100.0 / (SELECT COUNT(v) FROM Vehicle v)) as utilizationRate " +
+            "FROM Reservation r " +
+            "WHERE r.status = 'CONFIRMED' AND r.startDate >= :thirtyDaysAgo " +
+            "GROUP BY HOUR(r.startDate) " +
+            "ORDER BY hour")
+    List<Object[]> getHourlyUtilizationData(@Param("thirtyDaysAgo") LocalDateTime thirtyDaysAgo);
 }

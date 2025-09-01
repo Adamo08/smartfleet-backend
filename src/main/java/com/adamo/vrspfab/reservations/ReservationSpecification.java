@@ -25,12 +25,14 @@ public class ReservationSpecification {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // Security constraint: Non-admins can only see their own reservations.
-            if (currentUser != null && !currentUser.getRole().equals(com.adamo.vrspfab.users.Role.ADMIN)) {
-                predicates.add(criteriaBuilder.equal(root.get("user"), currentUser));
-            } else if (filter.getUserId() != null) {
-                // Admins can filter by any user ID.
+            // Security constraint: Filter by user ID
+            if (filter.getUserId() != null) {
+                // Filter by specific user ID (admin functionality)
                 predicates.add(criteriaBuilder.equal(root.get("user").get("id"), filter.getUserId()));
+            } else if (currentUser != null) {
+                // If no specific user ID is provided, always filter by current user
+                // This ensures even admins see only their own reservations when using user endpoints
+                predicates.add(criteriaBuilder.equal(root.get("user"), currentUser));
             }
 
             // Add other filter criteria

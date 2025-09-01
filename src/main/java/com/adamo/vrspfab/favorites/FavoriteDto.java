@@ -23,4 +23,5 @@ public class FavoriteDto {
     private String userEmail;
     private String vehicleBrand;
     private String vehicleModel;
+    private String vehicleImageUrl;
 }
