@@ -211,6 +211,43 @@ public class NotificationService {
     }
 
     /**
+     * Admin action: Notify all administrators about an event.
+     */
+    @Transactional
+    public void notifyAllAdmins(NotificationType type, String message, Map<String, Object> extraModel) {
+        log.info("=== NotificationService: Notifying All Admins ===");
+        log.info("Type: {}", type);
+        log.info("Message: {}", message);
+        
+        List<User> adminUsers = userRepository.findByRole(com.adamo.vrspfab.users.Role.ADMIN);
+        log.info("📢 Notifying {} admin users", adminUsers.size());
+        
+        int successCount = 0;
+        int failureCount = 0;
+        
+        for (User admin : adminUsers) {
+            if (admin == null || admin.getEmail() == null) {
+                log.warn("⚠️ Skipping admin with null email");
+                failureCount++;
+                continue;
+            }
+
+            log.info("Processing admin: {} ({})", admin.getEmail(), admin.getId());
+            
+            try {
+                createAndDispatchNotification(admin, type, message, extraModel);
+                successCount++;
+                log.info("✅ Successfully sent notification to admin: {}", admin.getEmail());
+            } catch (Exception e) {
+                failureCount++;
+                log.error("❌ Failed to send notification to admin {}: {}", admin.getEmail(), e.getMessage(), e);
+            }
+        }
+        
+        log.info("📊 Admin notification completed - Success: {}, Failures: {}", successCount, failureCount);
+    }
+
+    /**
      * Retrieves all notifications for the currently authenticated user.
      *
      * @param pageable Pagination information.
