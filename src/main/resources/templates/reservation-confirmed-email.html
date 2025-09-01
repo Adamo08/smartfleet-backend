@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title th:text="${subject}">Reservation Confirmed</title>
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #f5f7fa; margin: 0; padding: 0; color: #0f172a; }
+    .email-container { max-width: 640px; margin: 32px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 18px rgba(15,23,42,.08); }
+    .header { background: linear-gradient(90deg,#16a34a,#22c55e); color: #fff; padding: 22px 28px; }
+    .header h2 { margin: 0; font-size: 20px; letter-spacing: .2px; }
+    .content { padding: 28px; }
+    .hello { font-size: 16px; margin: 0 0 14px 0; }
+    .card { background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; border-radius: 10px; padding: 16px 18px; margin: 16px 0 22px; }
+    .kv { margin: 6px 0; }
+    .kv b { color: #065f46; }
+    .footer { text-align: center; padding: 18px 22px; color: #64748b; font-size: 12px; border-top: 1px solid #e2e8f0; }
+  </style>
+</head>
+<body>
+<div class="email-container">
+  <div class="header">
+    <h2 th:text="${subject}">Reservation Confirmed</h2>
+  </div>
+  <div class="content">
+    <p class="hello">Hello, <b th:text="${username}">User</b> 👋</p>
+    <p>Your reservation has been confirmed. Details below:</p>
+    <div class="card">
+      <p class="kv">Reservation: <b>#<span th:text="${reservationId}">123</span></b></p>
+      <p class="kv">Vehicle: <b><span th:text="${vehicle}">Vehicle</span></b></p>
+      <p class="kv">From <b th:text="${start}">start</b> to <b th:text="${end}">end</b></p>
+    </div>
+    <p>Enjoy your ride with SmartFleet VRS!</p>
+  </div>
+  <div class="footer">
+    <div>SmartFleet VRS • Premium mobility.</div>
+    <div>&copy; 2025 SmartFleet VRS. All rights reserved.</div>
+  </div>
+</div>
+</body>
+</html>

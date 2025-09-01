@@ -1,12 +1,15 @@
 package com.adamo.vrspfab.vehicles;
 
 import com.adamo.vrspfab.favorites.Favorite;
+import com.adamo.vrspfab.reservations.Reservation;
 import com.adamo.vrspfab.slots.Slot;
 import com.adamo.vrspfab.testimonials.Testimonial;
-import com.adamo.vrspfab.reservations.Reservation;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -20,24 +23,26 @@ import java.util.Set;
 public class Vehicle {
 
     @Id
-    @GeneratedValue (strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "brand")
-    private String brand;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private VehicleCategory category;
 
-    @Column(name = "model")
-    private String model;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "brand_id")
+    private VehicleBrand brand;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "model_id")
+    private VehicleModel model;
 
     @Column(name = "year")
     private int year;
 
     @Column(name = "license_plate", unique = true)
     private String licensePlate;
-
-    @Column(name = "type")
-    @Enumerated(EnumType.STRING)
-    private VehicleType vehicleType;
 
     @Column(name = "fuel_type")
     @Enumerated(EnumType.STRING)
@@ -49,6 +54,15 @@ public class Vehicle {
 
     @Column(name = "mileage")
     private float mileage;
+
+    @Column(name = "price_per_day")
+    private Double pricePerDay;
+
+    @Column(name = "image_url")
+    private String imageUrl;
+
+    @Column(name = "description", length = 1000)
+    private String description;
 
     @OneToMany(mappedBy = "vehicle", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -66,4 +80,10 @@ public class Vehicle {
     @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<Testimonial> testimonials = new HashSet<>();
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 }

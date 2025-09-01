@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime; // Changed from java.sql.Timestamp
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "refunds")
@@ -15,20 +15,38 @@ import java.time.LocalDateTime; // Changed from java.sql.Timestamp
 public class Refund {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_id", nullable = false)
     private Payment payment;
 
-    @Column(nullable = false)
+    @Column(name = "refund_transaction_id", length = 255)
+    private String refundTransactionId; // The ID of the refund from the provider
+
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 3)
     private String currency;
 
-    @Column(name = "reason", nullable = false, length = 500)
-    private String reason;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reason", nullable = false)
+    private RefundReason reason;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "refund_method", nullable = false)
+    private RefundMethod refundMethod;
+
+    @Column(name = "additional_notes", length = 1000)
+    private String additionalNotes;
+
+    @Column(name = "contact_email", length = 255)
+    private String contactEmail;
+
+    @Column(name = "contact_phone", length = 20)
+    private String contactPhone;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)

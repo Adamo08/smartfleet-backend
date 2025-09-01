@@ -7,8 +7,15 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 @Entity
-@Table(name = "favorites")
+@Table(
+        name = "favorites",
+        uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"user_id", "vehicle_id"})
+})
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -26,11 +33,12 @@ public class Favorite {
     @JoinColumn(name = "vehicle_id", nullable = false)
     private Vehicle vehicle;
 
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
 }

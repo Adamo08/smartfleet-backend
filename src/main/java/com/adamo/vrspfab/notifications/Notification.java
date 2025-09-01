@@ -33,7 +33,7 @@ public class Notification {
     private LocalDateTime createdAt;
 
     @Column(name = "is_read", nullable = false)
-    private boolean isRead;
+    private boolean read;
 
     @PrePersist
     protected void onCreate() {

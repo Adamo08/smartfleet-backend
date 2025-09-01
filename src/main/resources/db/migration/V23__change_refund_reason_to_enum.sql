@@ -1,0 +1,15 @@
+-- Migration: Change reason column from VARCHAR to ENUM in refunds table
+
+ALTER TABLE refunds
+    MODIFY COLUMN reason ENUM(
+    'VEHICLE_UNAVAILABLE',
+    'CANCELLATION_BY_CUSTOMER',
+    'TECHNICAL_ISSUE',
+    'DUPLICATE_PAYMENT',
+    'WRONG_AMOUNT',
+    'SERVICE_NOT_PROVIDED',
+    'EMERGENCY_CANCELLATION',
+    'WEATHER_CONDITIONS',
+    'VEHICLE_DAMAGE',
+    'OTHER'
+    ) NOT NULL;

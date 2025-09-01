@@ -1,0 +1,11 @@
+package com.adamo.vrspfab.vehicles.exceptions;
+
+/**
+ * Custom exception to be thrown when vehicle data is invalid
+ * (e.g., future year, implausible mileage).
+ */
+public class InvalidVehicleDataException extends RuntimeException {
+    public InvalidVehicleDataException(String message) {
+        super(message);
+    }
+}

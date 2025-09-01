@@ -1,0 +1,37 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+  
+  # CORS configuration for production
+  web:
+    cors:
+      allowed-origins: ${FRONTEND_URL}
+      allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+      allowed-headers: "*"
+      allow-credentials: true
+
+# Frontend configuration for OAuth redirects
+app:
+  frontend:
+    url: ${FRONTEND_URL:https://vrspfab.adamoproductions.com}
+
+# Production logging configuration
+logging:
+  level:
+    root: WARN
+    com.adamo.vrspfab: INFO
+    org.springframework.security: WARN
+    org.springframework.web: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Health check endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized

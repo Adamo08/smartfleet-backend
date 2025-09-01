@@ -1,60 +1,219 @@
 package com.adamo.vrspfab.reservations;
 
-import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import com.adamo.vrspfab.slots.SlotDto;
 
-
-@AllArgsConstructor
+/**
+ * REST controller for authenticated users to manage their own reservations.
+ * Path: /api/reservations
+ */
 @RestController
 @RequestMapping("/reservations")
+@RequiredArgsConstructor
+@Tag(name = "User Reservations", description = "APIs for users to manage their own vehicle reservations")
 public class ReservationController {
+
     private final ReservationService reservationService;
-    private final ReservationMapper reservationMapper;
 
+    /**
+     * POST /reservations : Creates a new reservation for the current user.
+     *
+     * @param request The reservation creation request.
+     * @return A response entity with the created reservation details (201 CREATED).
+     */
+    @Operation(summary = "Create a new reservation",
+               description = "Allows the authenticated user to create a new vehicle reservation.",
+               responses = {
+                       @ApiResponse(responseCode = "201", description = "Reservation created successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid reservation details or vehicle unavailable"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ReservationDto createReservation(@RequestBody ReservationDto reservationDTO) {
-        return reservationService.createReservation(reservationDTO);
+    public ResponseEntity<DetailedReservationDto> createReservation(@Valid @RequestBody CreateReservationRequest request) {
+        DetailedReservationDto createdReservation = reservationService.createReservation(request);
+        return new ResponseEntity<>(createdReservation, HttpStatus.CREATED);
     }
 
+    /**
+     * GET /reservations : Gets a paginated list of reservations for the current user.
+     *
+     * @param pageable Pagination and sorting parameters.
+     * @return A response entity with the page of reservation summaries (200 OK).
+     */
+    @Operation(summary = "Get user's reservations",
+               description = "Retrieves a paginated list of reservations for the currently authenticated user.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved user's reservations"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @GetMapping
+    public ResponseEntity<Page<ReservationSummaryDto>> getReservationsForCurrentUser(Pageable pageable) {
+        return ResponseEntity.ok(reservationService.getReservationsForCurrentUser(pageable));
+    }
+
+
+    /**
+     * GET /reservations/filtered : Gets a filtered and paginated list of reservations for the current user.
+     *
+     * @param page          The page number (0-based).
+     * @param size          The page size.
+     * @param sortBy        The field to sort by.
+     * @param sortDirection The sort direction (ASC or DESC).
+     * @param status        (Optional) Filter by reservation status.
+     * @param startDate    (Optional) Filter by start date (ISO 8601 format).
+     * @param endDate      (Optional) Filter by end date (ISO 8601 format).
+     * @param searchTerm   (Optional) Search term to filter reservations.
+     * @return A response entity with the page of filtered reservation summaries (200 OK).
+     */
+    @Operation(summary = "Get filtered user's reservations",
+               description = "Retrieves a filtered and paginated list of reservations for the currently authenticated user.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved filtered user's reservations"),
+                       @ApiResponse(responseCode = "400", description = "Invalid filter parameters"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @GetMapping("/filtered")
+    public ResponseEntity<Page<ReservationSummaryDto>> getFilteredReservationsForCurrentUser(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDirection,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startDate,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endDate,
+            @RequestParam(required = false) String searchTerm
+    ) {
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.fromString(sortDirection), sortBy));
+        
+        ReservationFilter filter = ReservationFilter.builder()
+                .status(status != null ? ReservationStatus.valueOf(status) : null)
+                .startDate(startDate)
+                .endDate(endDate)
+                .searchTerm(searchTerm)
+                .build();
+        
+        return ResponseEntity.ok(reservationService.getUserReservationsWithFilter(filter, pageable));
+    }
+
+    /**
+     * GET /reservations/{id} : Gets a single reservation by ID for the current user.
+     *
+     * @param id The ID of the reservation.
+     * @return A response entity with the detailed reservation DTO (200 OK).
+     */
+    @Operation(summary = "Get reservation by ID",
+               description = "Retrieves a single reservation by its ID for the currently authenticated user.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved reservation"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, user does not own this reservation"),
+                       @ApiResponse(responseCode = "404", description = "Reservation not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
     @GetMapping("/{id}")
-    public ResponseEntity<ReservationDto> getReservation(@PathVariable Long id) {
-        return ResponseEntity.ok(reservationService.getReservationById(id));
+    public ResponseEntity<DetailedReservationDto> getReservationById(@PathVariable Long id) {
+        return ResponseEntity.ok(reservationService.getReservationByIdForCurrentUser(id));
     }
 
-    @PutMapping("/{id}/confirm")
-    public ResponseEntity<ReservationDto> confirmReservation(@PathVariable Long id) {
-        return ResponseEntity.ok(reservationService.confirmReservation(id));
-    }
-
-    @PutMapping("/{id}/cancel")
-    public ResponseEntity<ReservationDto> cancelReservation(@PathVariable Long id) {
+    /**
+     * POST /reservations/{id}/cancel : Cancels a reservation.
+     *
+     * @param id The ID of the reservation to cancel.
+     * @return A response entity with the updated reservation DTO (200 OK).
+     */
+    @Operation(summary = "Cancel a reservation",
+               description = "Cancels an existing reservation for the currently authenticated user.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Reservation cancelled successfully"),
+                       @ApiResponse(responseCode = "400", description = "Cannot cancel reservation (e.g., already completed)"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, user does not own this reservation"),
+                       @ApiResponse(responseCode = "404", description = "Reservation not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<DetailedReservationDto> cancelReservation(@PathVariable Long id) {
         return ResponseEntity.ok(reservationService.cancelReservation(id));
     }
 
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteReservation(@PathVariable Long id) {
-        reservationService.deleteReservation(id);
+
+    @Operation(summary = "Get blocked dates for a vehicle",
+               description = "Retrieves dates that are blocked/unavailable for a given vehicle due to existing reservations.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved blocked dates"),
+                       @ApiResponse(responseCode = "404", description = "Vehicle not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @GetMapping("/vehicles/{vehicleId}/blocked-dates")
+    public ResponseEntity<List<String>> getBlockedDates(
+            @PathVariable Long vehicleId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+        
+        // Default to next 3 months if no date range provided
+        if (startDate == null) {
+            startDate = LocalDateTime.now();
+        }
+        if (endDate == null) {
+            endDate = startDate.plusMonths(3);
+        }
+        
+        List<String> blockedDates = reservationService.getBlockedDatesForVehicle(vehicleId, startDate, endDate);
+        return ResponseEntity.ok(blockedDates);
     }
 
-    @GetMapping
-    public ResponseEntity<List<ReservationDto>> getAllReservations(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) Long userId) {
-        return ResponseEntity.ok(reservationService.getAllReservations(page, size, status, userId));
+    /**
+     * GET /reservations/vehicles/{vehicleId}/available-slots : Gets available slots for a vehicle
+     */
+    @Operation(summary = "Get available slots for a vehicle",
+               description = "Retrieves available time slots for a specific vehicle within a date range, supporting different booking types.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved available slots"),
+                       @ApiResponse(responseCode = "404", description = "Vehicle not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @GetMapping("/vehicles/{vehicleId}/available-slots")
+    public ResponseEntity<List<SlotDto>> getAvailableSlots(
+            @PathVariable Long vehicleId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(defaultValue = "DAILY") String bookingType) {
+        
+        List<SlotDto> availableSlots = reservationService.getAvailableSlots(vehicleId, startDate, endDate, bookingType);
+        return ResponseEntity.ok(availableSlots);
     }
 
-    @GetMapping("/{id}/payment")
-    public ResponseEntity<?> getPaymentForReservation(@PathVariable Long id) {
-        // Placeholder - Integrate with PaymentService later
-        return ResponseEntity.ok().build();
+    /**
+     * GET /reservations/vehicles/{vehicleId}/slots : Gets all slots for a vehicle (for backward compatibility)
+     */
+    @Operation(summary = "Get slots for a vehicle",
+               description = "Retrieves all available slots for a specific vehicle. Backward compatibility endpoint.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved slots"),
+                       @ApiResponse(responseCode = "404", description = "Vehicle not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @GetMapping("/vehicles/{vehicleId}/slots")
+    public ResponseEntity<List<SlotDto>> getVehicleSlots(@PathVariable Long vehicleId) {
+        LocalDateTime startDate = LocalDateTime.now();
+        LocalDateTime endDate = startDate.plusMonths(3);
+        List<SlotDto> availableSlots = reservationService.getAvailableSlots(vehicleId, startDate, endDate, "DAILY");
+        return ResponseEntity.ok(availableSlots);
     }
 }

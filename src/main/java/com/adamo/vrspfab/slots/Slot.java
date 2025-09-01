@@ -6,6 +6,12 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import com.adamo.vrspfab.slots.SlotType;
+
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "slots")
@@ -30,25 +36,25 @@ public class Slot {
     private LocalDateTime endTime;
 
     @Column(name = "is_available", nullable = false)
-    private boolean isAvailable;
+    private boolean available;
 
-    @OneToOne(mappedBy = "slot")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "slot_type", nullable = false)
+    private SlotType slotType;
+
+    @Column(name = "price", precision = 10, scale = 2)
+    private BigDecimal price;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reservation_id") // New foreign key column
     private Reservation reservation;
 
+    @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

@@ -1,0 +1,2 @@
+ALTER TABLE slots
+    MODIFY COLUMN is_available TINYINT(1) NOT NULL DEFAULT 1;

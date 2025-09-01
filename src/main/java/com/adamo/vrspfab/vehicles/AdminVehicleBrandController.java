@@ -1,0 +1,143 @@
+package com.adamo.vrspfab.vehicles;
+
+import com.adamo.vrspfab.vehicles.dto.CreateVehicleBrandDto;
+import com.adamo.vrspfab.vehicles.dto.UpdateVehicleBrandDto;
+import com.adamo.vrspfab.vehicles.dto.VehicleBrandResponseDto;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/admin/vehicle-brands")
+@RequiredArgsConstructor
+@Slf4j
+@Tag(name = "Admin Vehicle Brands", description = "APIs for administrators to manage vehicle brands")
+public class AdminVehicleBrandController {
+    
+    private final VehicleBrandService brandService;
+    
+    @GetMapping
+    @Operation(summary = "Get all vehicle brands with pagination",
+               description = "Retrieves a paginated list of all vehicle brands. Requires admin privileges.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved brands"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    public ResponseEntity<Page<VehicleBrandResponseDto>> getAllBrands(Pageable pageable) {
+        log.info("Admin requested all vehicle brands with pagination. Page: {}, Size: {}", pageable.getPageNumber(), pageable.getPageSize());
+        Page<VehicleBrandResponseDto> brands = brandService.getAllBrands(pageable);
+        return ResponseEntity.ok(brands);
+    }
+    
+    @GetMapping("/{id}")
+    @Operation(summary = "Get vehicle brand by ID",
+               description = "Retrieves a single vehicle brand by its ID. Requires admin privileges.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved brand"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges"),
+                       @ApiResponse(responseCode = "404", description = "Brand not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    public ResponseEntity<VehicleBrandResponseDto> getBrandById(@PathVariable Long id) {
+        log.info("Admin requested vehicle brand with ID: {}", id);
+        VehicleBrandResponseDto brand = brandService.getBrandById(id);
+        return ResponseEntity.ok(brand);
+    }
+    
+    @PostMapping
+    @Operation(summary = "Create a new vehicle brand",
+               description = "Creates a new vehicle brand. Requires admin privileges.",
+               responses = {
+                       @ApiResponse(responseCode = "201", description = "Brand created successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid brand data"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges"),
+                       @ApiResponse(responseCode = "409", description = "Brand name already exists"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<VehicleBrandResponseDto> createBrand(@Valid @RequestBody CreateVehicleBrandDto createDto) {
+        log.info("Admin creating new vehicle brand: {}", createDto.getName());
+        VehicleBrandResponseDto createdBrand = brandService.createBrand(createDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdBrand);
+    }
+    
+    @PutMapping("/{id}")
+    @Operation(summary = "Update vehicle brand",
+               description = "Updates an existing vehicle brand. Requires admin privileges.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Brand updated successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid brand data"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges"),
+                       @ApiResponse(responseCode = "404", description = "Brand not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    public ResponseEntity<VehicleBrandResponseDto> updateBrand(@PathVariable Long id, @Valid @RequestBody UpdateVehicleBrandDto updateDto) {
+        log.info("Admin updating vehicle brand with ID: {}", id);
+        VehicleBrandResponseDto updatedBrand = brandService.updateBrand(id, updateDto);
+        return ResponseEntity.ok(updatedBrand);
+    }
+    
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete vehicle brand",
+               description = "Deletes a vehicle brand by its ID. Requires admin privileges.",
+               responses = {
+                       @ApiResponse(responseCode = "204", description = "Brand deleted successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges"),
+                       @ApiResponse(responseCode = "404", description = "Brand not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public ResponseEntity<Void> deleteBrand(@PathVariable Long id) {
+        log.info("Admin deleting vehicle brand with ID: {}", id);
+        brandService.deleteBrand(id);
+        return ResponseEntity.noContent().build();
+    }
+    
+    @PatchMapping("/{id}/toggle-status")
+    @Operation(summary = "Toggle brand status",
+               description = "Toggles the active status of a vehicle brand. Requires admin privileges.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Brand status toggled successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges"),
+                       @ApiResponse(responseCode = "404", description = "Brand not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    public ResponseEntity<VehicleBrandResponseDto> toggleBrandStatus(@PathVariable Long id) {
+        log.info("Admin toggling status for vehicle brand with ID: {}", id);
+        VehicleBrandResponseDto updatedBrand = brandService.toggleBrandStatus(id);
+        return ResponseEntity.ok(updatedBrand);
+    }
+    
+    @GetMapping("/{id}/status-info")
+    @Operation(summary = "Get brand status information",
+               description = "Retrieves information about vehicles that would be affected by deactivating this brand. Requires admin privileges.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Status information retrieved successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges"),
+                       @ApiResponse(responseCode = "404", description = "Brand not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    public ResponseEntity<VehicleStatusInfo> getBrandStatusInfo(@PathVariable Long id) {
+        log.info("Admin requested status info for vehicle brand with ID: {}", id);
+        VehicleStatusInfo statusInfo = brandService.getBrandStatusInfo(id);
+        return ResponseEntity.ok(statusInfo);
+    }
+}

@@ -7,8 +7,10 @@ import com.adamo.vrspfab.vehicles.Vehicle;
 import com.adamo.vrspfab.users.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime; // Changed from java.sql.Timestamp
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -18,8 +20,17 @@ import java.util.Set;
 @Setter
 @Entity
 @Builder
-@Table(name = "reservations")
+@Table(
+        name = "reservations",
+        indexes = {
+                @Index(name = "idx_reservation_user", columnList = "user_id"),
+                @Index(name = "idx_reservation_vehicle", columnList = "vehicle_id"),
+                @Index(name = "idx_reservation_start_date", columnList = "startDate"),
+                @Index(name = "idx_reservation_status", columnList = "status")
+        }
+)
 public class Reservation {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -45,15 +56,41 @@ public class Reservation {
     @Column(name = "comment", length = 500)
     private String comment;
 
+    /**
+     * JSON field to store booking context information.
+     * Contains slot type, duration, calculation method, and preferences.
+     */
+    @Column(name = "booking_context", columnDefinition = "json")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private ReservationBookingContext bookingContext;
+
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "reservation")
     private Payment payment;
 
-    @OneToOne
-    @JoinColumn(name = "slot_id")
-    private Slot slot;
+    @OneToMany(mappedBy = "reservation", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = false) // Orphan removal is false as slots might exist independently
+    @Builder.Default
+    private Set<Slot> slots = new HashSet<>();
 
     // Bidirectional relationship for Bookmarks
     @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<Bookmark> bookmarks = new HashSet<>();
+
+    // === Timestamps ===
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = this.createdAt;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

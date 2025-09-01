@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title th:text="${subject}">Payment Failed</title>
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #f5f7fa; margin: 0; padding: 0; color: #0f172a; }
+    .email-container { max-width: 640px; margin: 32px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 18px rgba(15,23,42,.08); }
+    .header { background: linear-gradient(90deg,#ef4444,#dc2626); color: #fff; padding: 22px 28px; }
+    .header h2 { margin: 0; font-size: 20px; letter-spacing: .2px; }
+    .content { padding: 28px; }
+    .hello { font-size: 16px; margin: 0 0 14px 0; }
+    .card { background: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #dc2626; border-radius: 10px; padding: 16px 18px; margin: 16px 0 22px; }
+    .kv { margin: 6px 0; }
+    .kv b { color: #7f1d1d; }
+    .footer { text-align: center; padding: 18px 22px; color: #64748b; font-size: 12px; border-top: 1px solid #e2e8f0; }
+    .btn { display:inline-block; padding:10px 14px; background:#111827; color:#fff !important; text-decoration:none; border-radius:8px; }
+  </style>
+</head>
+<body>
+<div class="email-container">
+  <div class="header">
+    <h2 th:text="${subject}">Payment Failed</h2>
+  </div>
+  <div class="content">
+    <p class="hello">Hello, <b th:text="${username}">User</b> 👋</p>
+    <p>Your payment could not be completed.</p>
+
+    <div class="card">
+      <p class="kv">Reservation: <b>#<span th:text="${reservationId}">123</span></b></p>
+      <p class="kv">Status: <b style="color:#b91c1c;">Failed</b></p>
+    </div>
+
+    <p>Please try again or contact our support team if the issue persists.</p>
+    <p>
+      <a class="btn" href="https://smartfleet.example/support" target="_blank">Contact Support</a>
+    </p>
+  </div>
+  <div class="footer">
+    <div>We’re here to help you get back on the road.</div>
+    <div>&copy; 2025 SmartFleet VRS. All rights reserved.</div>
+  </div>
+</div>
+</body>
+</html>
