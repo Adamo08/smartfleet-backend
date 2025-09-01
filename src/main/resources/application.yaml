@@ -2,20 +2,20 @@ spring:
   application:
     name: vrspfab
 
-  datasource:
-    url: jdbc:mysql://localhost:3306/vrspfab_api?createDatabaseIfNotExist=true
-    username: root
-    password: mysql_root_pass
-  jpa:
-      show-sql: true
-      hibernate:
-        ddl-auto: update
-
   jwt:
     secret: ${JWT_SECRET}
     accessTokenExpiration: 7200 # 2h in seconds
     refreshTokenExpiration: 604800 # 7 days in seconds
 
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  
+  # Server configuration
+  server:
+    port: ${PORT:8080}
+    servlet:
+      context-path: /
+  
   ## OAuth2 Configuration
   security:
     oauth2:
@@ -84,23 +84,3 @@ paypal:
 
 payment:
   provider: paypal # or stripe
-
-
-# Frontend configuration for OAuth redirects
-app:
-  frontend:
-    url: ${FRONTEND_URL:http://localhost:4200}
-
-
-
-
-
-logging:
-  level:
-    root: INFO
-    org.springframework.security: DEBUG
-    org.springframework.security.oauth2.client: DEBUG
-    org.springframework.security.web: DEBUG
-    org.springframework.security.oauth2.core: DEBUG
-    com.adamo.vrspfab.auth: DEBUG
-    com.adamo.vrspfab: TRACE

@@ -1,0 +1,48 @@
+spring:
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/vrspfab_api?createDatabaseIfNotExist=true
+    username: root
+    password: mysql_root_pass
+  jpa:
+      show-sql: true
+      hibernate:
+        ddl-auto: update
+
+
+# Frontend configuration for OAuth redirects
+app:
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:4200}
+
+
+# CORS configuration for development
+spring:
+  web:
+    cors:
+      allowed-origins: ${FRONTEND_URL:http://localhost:4200}
+      allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+      allowed-headers: "*"
+      allow-credentials: true
+
+logging:
+  level:
+    root: INFO
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2.client: DEBUG
+    org.springframework.security.web: DEBUG
+    org.springframework.security.oauth2.core: DEBUG
+    com.adamo.vrspfab.auth: DEBUG
+    com.adamo.vrspfab: TRACE
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Development health check endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
