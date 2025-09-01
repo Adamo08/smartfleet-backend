@@ -30,6 +30,10 @@ public class Payment {
     @Column(name = "amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
+    @Column(name = "refunded_amount", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal refundedAmount = BigDecimal.ZERO;
+
     @Column(name = "currency", nullable = false, length = 3)
     private String currency; // e.g., "MAD", "USD" (ISO 4217)
 

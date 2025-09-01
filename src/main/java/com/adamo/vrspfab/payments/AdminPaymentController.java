@@ -65,6 +65,60 @@ public class AdminPaymentController {
     }
 
     /**
+     * Get all pending refund requests (Admin only)
+     */
+    @Operation(summary = "Get all refund requests (Admin only)",
+               description = "Retrieves all refund requests for admin review. Requires ADMIN role.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Refund requests retrieved successfully"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges (requires ADMIN role)"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @GetMapping("/refund-requests")
+    public ResponseEntity<Page<RefundDetailsDto>> getRefundRequests(Pageable pageable) {
+        return ResponseEntity.ok(refundService.getRefundRequests(pageable));
+    }
+
+    /**
+     * Approve and process a refund request (Admin only)
+     */
+    @Operation(summary = "Approve and process refund request (Admin only)",
+               description = "Approves a refund request and processes the actual refund. Requires ADMIN role.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Refund approved and processed successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid refund request"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges (requires ADMIN role)"),
+                       @ApiResponse(responseCode = "404", description = "Refund request not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @PostMapping("/refund-requests/{refundId}/approve")
+    public ResponseEntity<RefundResponseDto> approveRefund(@PathVariable Long refundId) {
+        return ResponseEntity.ok(refundService.approveAndProcessRefund(refundId));
+    }
+
+    /**
+     * Decline a refund request (Admin only)
+     */
+    @Operation(summary = "Decline refund request (Admin only)",
+               description = "Declines a refund request. Requires ADMIN role.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Refund request declined successfully"),
+                       @ApiResponse(responseCode = "400", description = "Invalid request"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "403", description = "Forbidden, insufficient privileges (requires ADMIN role)"),
+                       @ApiResponse(responseCode = "404", description = "Refund request not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @PostMapping("/refund-requests/{refundId}/decline")
+    public ResponseEntity<RefundResponseDto> declineRefund(
+            @PathVariable Long refundId,
+            @RequestParam String adminNotes) {
+        return ResponseEntity.ok(refundService.declineRefund(refundId, adminNotes));
+    }
+
+    /**
      * Manually triggers a refund for a specific payment.
      * This provides an administrative override or manual refund capability.
      * @param requestDto The refund request details.

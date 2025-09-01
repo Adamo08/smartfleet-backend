@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 public class PaymentDetailsDto {
     private Long id;
     private BigDecimal amount;
+    private BigDecimal refundedAmount;
     private String currency;
     private PaymentStatus status;
     private String provider;

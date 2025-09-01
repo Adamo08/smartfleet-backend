@@ -31,11 +31,13 @@ public class Refund {
     @Column(nullable = false, length = 3)
     private String currency;
 
-    @Column(name = "reason", length = 500)
-    private String reason;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reason", nullable = false)
+    private RefundReason reason;
 
-    @Column(name = "refund_method", length = 100)
-    private String refundMethod;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "refund_method", nullable = false)
+    private RefundMethod refundMethod;
 
     @Column(name = "additional_notes", length = 1000)
     private String additionalNotes;

@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 public interface PaymentMapper {
     @Mapping(target = "id", source = "id")
     @Mapping(target = "amount", source = "amount")
+    @Mapping(target = "refundedAmount", source = "refundedAmount")
     @Mapping(target = "currency", source = "currency")
     @Mapping(target = "status", source = "status")
     @Mapping(target = "provider", source = "provider")

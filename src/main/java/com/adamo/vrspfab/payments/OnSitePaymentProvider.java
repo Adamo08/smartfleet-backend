@@ -93,21 +93,42 @@ public class OnSitePaymentProvider implements PaymentProvider {
         Payment payment = paymentRepository.findById(requestDto.getPaymentId())
                 .orElseThrow(() -> new PaymentException("Cannot refund non-existent payment with ID: " + requestDto.getPaymentId()));
 
+        // Validate refund amount
+        java.math.BigDecimal currentRefundedAmount = payment.getRefundedAmount() != null ? payment.getRefundedAmount() : java.math.BigDecimal.ZERO;
+        java.math.BigDecimal remainingAmount = payment.getAmount().subtract(currentRefundedAmount);
+        
+        if (requestDto.getAmount().compareTo(remainingAmount) > 0) {
+            throw new PaymentException("Refund amount (" + requestDto.getAmount() + ") exceeds remaining refundable amount (" + remainingAmount + ")");
+        }
+
         Refund refund = new Refund();
         refund.setPayment(payment);
         refund.setRefundTransactionId("ONSITE-RFD-" + payment.getId() + "-" + System.currentTimeMillis());
         refund.setAmount(requestDto.getAmount());
         refund.setCurrency(payment.getCurrency());
         refund.setReason(requestDto.getReason());
-        refund.setRefundMethod(requestDto.getRefundMethod() != null ? requestDto.getRefundMethod() : "ONSITE");
+        refund.setRefundMethod(requestDto.getRefundMethod() != null ? requestDto.getRefundMethod() : RefundMethod.ONSITE_CASH);
         refund.setAdditionalNotes(requestDto.getAdditionalNotes());
         refund.setContactEmail(requestDto.getContactEmail());
         refund.setContactPhone(requestDto.getContactPhone());
-        refund.setStatus(RefundStatus.PROCESSED);
         refund.setProcessedAt(LocalDateTime.now());
-        refundRepository.save(refund);
 
-        payment.setStatus(PaymentStatus.REFUNDED);
+        // Update payment refunded amount
+        java.math.BigDecimal newRefundedAmount = currentRefundedAmount.add(requestDto.getAmount());
+        payment.setRefundedAmount(newRefundedAmount);
+
+        // Determine refund and payment status based on amount
+        boolean isFullRefund = newRefundedAmount.compareTo(payment.getAmount()) == 0;
+        
+        if (isFullRefund) {
+            refund.setStatus(RefundStatus.PROCESSED);
+            payment.setStatus(PaymentStatus.REFUNDED);
+        } else {
+            refund.setStatus(RefundStatus.PARTIALLY_PROCESSED);
+            payment.setStatus(PaymentStatus.PARTIALLY_REFUNDED);
+        }
+
+        refundRepository.save(refund);
         paymentRepository.save(payment);
 
         return new RefundResponseDto(refund.getId(), refund.getRefundTransactionId(), refund.getStatus());

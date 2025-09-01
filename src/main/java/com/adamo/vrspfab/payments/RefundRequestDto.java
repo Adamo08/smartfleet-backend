@@ -6,6 +6,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
+
 @Data
 public class RefundRequestDto {
     @NotNull(message = "Payment ID cannot be null")
@@ -13,8 +14,8 @@ public class RefundRequestDto {
     @NotNull(message = "Amount cannot be null")
     @Positive(message = "Amount must be positive")
     private BigDecimal amount;
-    private String reason;  // Optional reason for the refund
-    private String refundMethod;  // Optional refund method
+    private RefundReason reason;  // Reason for the refund
+    private RefundMethod refundMethod;  // Refund method
     private String additionalNotes;  // Optional additional notes
     private String contactEmail;  // Optional contact email
     private String contactPhone;  // Optional contact phone

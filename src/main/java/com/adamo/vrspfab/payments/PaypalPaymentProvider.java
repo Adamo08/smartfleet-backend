@@ -199,6 +199,14 @@ public class PaypalPaymentProvider implements PaymentProvider {
             throw new PaymentException("Payment " + payment.getId() + " has no Capture ID to refund.");
         }
 
+        // Validate refund amount
+        var currentRefundedAmount = payment.getRefundedAmount() != null ? payment.getRefundedAmount() : java.math.BigDecimal.ZERO;
+        var remainingAmount = payment.getAmount().subtract(currentRefundedAmount);
+        
+        if (requestDto.getAmount().compareTo(remainingAmount) > 0) {
+            throw new PaymentException("Refund amount (" + requestDto.getAmount() + ") exceeds remaining refundable amount (" + remainingAmount + ")");
+        }
+
         // 2. CREATE AND SAVE a PENDING refund record FIRST
         // This records our intent to refund before we make the external call.
         Refund refund = new Refund();
@@ -207,7 +215,7 @@ public class PaypalPaymentProvider implements PaymentProvider {
         refund.setCurrency(payment.getCurrency());
         refund.setReason(requestDto.getReason());
         // Populate additional audit/contact fields
-        refund.setRefundMethod(requestDto.getRefundMethod() != null ? requestDto.getRefundMethod() : "PAYPAL");
+        refund.setRefundMethod(requestDto.getRefundMethod() != null ? requestDto.getRefundMethod() : RefundMethod.PAYPAL);
         refund.setAdditionalNotes(requestDto.getAdditionalNotes());
         refund.setContactEmail(requestDto.getContactEmail());
         refund.setContactPhone(requestDto.getContactPhone());
@@ -238,9 +246,22 @@ public class PaypalPaymentProvider implements PaymentProvider {
             }
 
             // 4. SUCCESS: Update the record with the outcome
-            refund.setStatus(RefundStatus.PROCESSED);
+            // Update payment refunded amount
+            var newRefundedAmount = currentRefundedAmount.add(requestDto.getAmount());
+            payment.setRefundedAmount(newRefundedAmount);
+
+            // Determine refund and payment status based on amount
+            boolean isFullRefund = newRefundedAmount.compareTo(payment.getAmount()) == 0;
+            
+            if (isFullRefund) {
+                refund.setStatus(RefundStatus.PROCESSED);
+                payment.setStatus(PaymentStatus.REFUNDED);
+            } else {
+                refund.setStatus(RefundStatus.PARTIALLY_PROCESSED);
+                payment.setStatus(PaymentStatus.PARTIALLY_REFUNDED);
+            }
+            
             refund.setRefundTransactionId(refundResponse.getId());
-            payment.setStatus(PaymentStatus.REFUNDED);
 
             return new RefundResponseDto(refund.getId(), refund.getRefundTransactionId(), refund.getStatus());
 

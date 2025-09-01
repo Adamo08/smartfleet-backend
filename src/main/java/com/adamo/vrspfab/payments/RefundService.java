@@ -48,14 +48,50 @@ public class RefundService {
         // validate ownership of the payment
         validatePaymentOwnership(payment.getId());
 
+        // Create refund request (not process immediately)
+        Refund refund = createRefundRequest(requestDto, payment);
+        
+        // Return response indicating refund request was created
+        return new RefundResponseDto(
+                refund.getId(),
+                null, // No transaction ID yet since it's just a request
+                RefundStatus.REQUESTED
+        );
+    }
+
+    @Transactional
+    public RefundResponseDto approveAndProcessRefund(Long refundId) {
+        Refund refund = refundRepository.findById(refundId)
+                .orElseThrow(() -> new PaymentException("Refund not found with ID: " + refundId));
+
+        // Only admins can approve refunds
+        User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new PaymentException("Only administrators can approve refunds");
+        }
+
+        // Update refund status to PENDING (being processed)
+        refund.setStatus(RefundStatus.PENDING);
+        refundRepository.save(refund);
+
+        Payment payment = refund.getPayment();
         PaymentProvider provider = providerFactory.getProvider(payment.getProvider())
                 .orElseThrow(() -> new PaymentException("Provider not found for payment: " + payment.getId()));
+
+        // Now process the actual refund
+        RefundRequestDto requestDto = new RefundRequestDto();
+        requestDto.setPaymentId(payment.getId());
+        requestDto.setAmount(refund.getAmount());
+        requestDto.setReason(refund.getReason());
+        requestDto.setRefundMethod(refund.getRefundMethod());
+        requestDto.setAdditionalNotes(refund.getAdditionalNotes());
+        requestDto.setContactEmail(refund.getContactEmail());
+        requestDto.setContactPhone(refund.getContactPhone());
 
         RefundResponseDto response = provider.processRefund(requestDto);
         
         // Record refund activity
         try {
-            User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
             String description = String.format("Refund of %s %s processed for payment #%d", 
                     requestDto.getAmount(), payment.getCurrency(), payment.getId());
             String title = response.getStatus() == RefundStatus.PROCESSED ? "Refund Processed" : "Refund Failed";
@@ -65,7 +101,7 @@ public class RefundService {
                     "paymentId", payment.getId(),
                     "amount", requestDto.getAmount(),
                     "currency", payment.getCurrency(),
-                    "reason", requestDto.getReason() != null ? requestDto.getReason() : "No reason provided",
+                    "reason", requestDto.getReason() != null ? requestDto.getReason().getDescription() : "No reason provided",
                     "provider", payment.getProvider()
             );
             
@@ -107,6 +143,76 @@ public class RefundService {
         return response;
     }
 
+    @Transactional
+    public RefundResponseDto declineRefund(Long refundId, String adminNotes) {
+        Refund refund = refundRepository.findById(refundId)
+                .orElseThrow(() -> new PaymentException("Refund not found with ID: " + refundId));
+
+        // Only admins can decline refunds
+        User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new PaymentException("Only administrators can decline refunds");
+        }
+
+        // Update refund status to DECLINED
+        refund.setStatus(RefundStatus.DECLINED);
+        refund.setAdditionalNotes(adminNotes);
+        refundRepository.save(refund);
+
+        // Notify user that refund was declined
+        try {
+            var user = refund.getPayment().getReservation().getUser();
+            notificationService.createAndDispatchNotification(
+                    user,
+                    com.adamo.vrspfab.notifications.NotificationType.SYSTEM_ALERT,
+                    "Your refund request for payment #" + refund.getPayment().getId() + " has been declined.",
+                    java.util.Map.of(
+                            "paymentId", refund.getPayment().getId(),
+                            "refundId", refund.getId(),
+                            "adminNotes", adminNotes
+                    )
+            );
+        } catch (Exception ignored) {}
+
+        return new RefundResponseDto(
+                refund.getId(),
+                null, // No transaction ID for declined refunds
+                RefundStatus.DECLINED
+        );
+    }
+
+    private Refund createRefundRequest(RefundRequestDto requestDto, Payment payment) {
+        Refund refund = new Refund();
+        refund.setPayment(payment);
+        refund.setAmount(requestDto.getAmount());
+        refund.setCurrency(payment.getCurrency());
+        refund.setReason(requestDto.getReason());
+        refund.setRefundMethod(requestDto.getRefundMethod());
+        refund.setAdditionalNotes(requestDto.getAdditionalNotes());
+        refund.setContactEmail(requestDto.getContactEmail());
+        refund.setContactPhone(requestDto.getContactPhone());
+        refund.setStatus(RefundStatus.REQUESTED);
+        
+        refund = refundRepository.save(refund);
+
+        // Notify admins about new refund request
+        try {
+            notificationService.notifyAllAdmins(
+                    com.adamo.vrspfab.notifications.NotificationType.REFUND_REQUEST,
+                    "New refund request for payment #" + payment.getId(),
+                    java.util.Map.of(
+                            "paymentId", payment.getId(),
+                            "refundId", refund.getId(),
+                            "amount", requestDto.getAmount(),
+                            "currency", payment.getCurrency(),
+                            "reason", requestDto.getReason().getDescription()
+                    )
+            );
+        } catch (Exception ignored) {}
+
+        return refund;
+    }
+
     /**
      * Retrieves refund details after validating ownership.
      *
@@ -136,6 +242,19 @@ public class RefundService {
             return refundRepository.findByUserId(currentUser.getId(), pageable)
                     .map(refundMapper::toRefundDetailsDto);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RefundDetailsDto> getRefundRequests(Pageable pageable) {
+        // Only admins can access refund requests
+        User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new PaymentException("Only administrators can view refund requests");
+        }
+        
+        // Get only REQUESTED refunds for admin review
+        return refundRepository.findByStatus(RefundStatus.REQUESTED, pageable)
+                .map(refundMapper::toRefundDetailsDto);
     }
 
     @Transactional(readOnly = true)

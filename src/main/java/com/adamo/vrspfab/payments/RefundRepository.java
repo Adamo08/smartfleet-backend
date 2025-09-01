@@ -51,4 +51,8 @@ public interface RefundRepository extends JpaRepository<Refund, Long>, JpaSpecif
     // User-specific refund history
     @Query("SELECT r FROM Refund r WHERE r.payment.reservation.user.id = :userId")
     Page<Refund> findByUserId(@Param("userId") Long userId, Pageable pageable);
+
+    // Find refunds by status
+    @EntityGraph(attributePaths = {"payment", "payment.reservation", "payment.reservation.user"})
+    Page<Refund> findByStatus(RefundStatus status, Pageable pageable);
 }

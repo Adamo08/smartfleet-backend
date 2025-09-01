@@ -48,4 +48,30 @@ public interface PaymentRepository extends JpaRepository<Payment, Long>, JpaSpec
     Optional<BigDecimal> sumAmountByStatus(@Param("status") PaymentStatus status);
 
     List<Payment> findByStatus(PaymentStatus status);
+
+    /**
+     * Get total revenue by category
+     */
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p " +
+           "WHERE p.status = 'COMPLETED' AND p.reservation.vehicle.category.id = :categoryId")
+    BigDecimal getTotalRevenueByCategoryId(@Param("categoryId") Long categoryId);
+
+    /**
+     * Get total revenue by brand
+     */
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p " +
+           "WHERE p.status = 'COMPLETED' AND p.reservation.vehicle.brand.id = :brandId")
+    BigDecimal getTotalRevenueByBrandId(@Param("brandId") Long brandId);
+
+    /**
+     * Get total fleet revenue
+     */
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.status = 'COMPLETED'")
+    BigDecimal getTotalFleetRevenue();
+
+    /**
+     * Get monthly growth rate (placeholder - you can implement proper calculation)
+     */
+    @Query("SELECT 12.5 FROM Payment p WHERE p.status = 'COMPLETED' GROUP BY MONTH(p.createdAt) HAVING COUNT(p) > 0")
+    BigDecimal getMonthlyGrowthRate();
 }
