@@ -38,7 +38,7 @@ services:
       - key: PAYPAL_WEBHOOK_SECRET
         sync: false
       - key: FRONTEND_URL
-        value: https://YOUR-ACTUAL-NETLIFY-URL.netlify.app
+        value: https://adamo-smartfleet.netlify.app/
 
 databases:
   - name: smartfleet-db
