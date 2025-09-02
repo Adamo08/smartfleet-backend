@@ -16,8 +16,11 @@ spring:
     baseline-version: 0
     repair-on-migrate: true
     clean-on-validation-error: true
+    clean-disabled: false
     validate-on-migrate: false
     locations: classpath:db/migration
+    # Force clean on startup to handle corrupted schema
+    clean-on-startup: true
   
   # CORS configuration for production
   web:
