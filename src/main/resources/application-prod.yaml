@@ -29,6 +29,7 @@ spring:
       allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
       allowed-headers: "*"
       allow-credentials: true
+      max-age: 3600
 
 # Frontend configuration for OAuth redirects
 app:
@@ -42,6 +43,7 @@ logging:
     com.adamo.vrspfab: INFO
     org.springframework.security: WARN
     org.springframework.web: WARN
+    org.springframework.web.cors: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

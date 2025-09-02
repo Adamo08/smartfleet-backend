@@ -68,6 +68,8 @@ public class SecurityConfig {
                     featureSecurityRules.forEach(r -> r.configure(c));
                     // allow oauth2 endpoints
                     c.requestMatchers("/oauth2/**", "/login/oauth2/**", "/oauth2/authorization/**").permitAll();
+                    // allow OPTIONS requests for CORS preflight
+                    c.requestMatchers("OPTIONS", "/**").permitAll();
                     c.anyRequest().authenticated();
                 })
                 .oauth2Login(o -> o
