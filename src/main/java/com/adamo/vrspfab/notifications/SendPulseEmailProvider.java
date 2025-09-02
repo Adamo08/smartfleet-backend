@@ -15,10 +15,8 @@ import java.util.Map;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class SendPulseEmailProvider implements EmailProvider {
 
-    @Qualifier("emailRestTemplate")
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
@@ -33,6 +31,11 @@ public class SendPulseEmailProvider implements EmailProvider {
 
     @Value("${sendpulse.from.name:SmartFleet}")
     private String fromName;
+
+    public SendPulseEmailProvider(@Qualifier("emailRestTemplate") RestTemplate restTemplate, ObjectMapper objectMapper) {
+        this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public boolean sendEmail(String to, String subject, String htmlContent) {
