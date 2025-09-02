@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.adamo</groupId>
     <artifactId>vrspfab</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>vrspfab</name>
     <description>vrspfab</description>
     <url/>
@@ -223,9 +223,9 @@
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-maven-plugin</artifactId>
                 <configuration>
-                    <url>jdbc:mysql://localhost:3306/vrspfab_api?createDatabaseIfNotExist=true</url>
-                    <user>root</user>
-                    <password>mysql_root_pass</password>
+                    <url>${flyway.url:jdbc:mysql://localhost:3306/vrspfab_api?createDatabaseIfNotExist=true}</url>
+                    <user>${flyway.user:root}</user>
+                    <password>${flyway.password:mysql_root_pass}</password>
                     <cleanDisabled>false</cleanDisabled>
                 </configuration>
             </plugin>
@@ -237,6 +237,11 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
+                        </path>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>1.6.3</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
