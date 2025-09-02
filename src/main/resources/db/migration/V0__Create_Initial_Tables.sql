@@ -275,7 +275,7 @@ CREATE TABLE email_templates (
 CREATE TABLE email_template_variables (
   id bigint NOT NULL AUTO_INCREMENT,
   template_id bigint NOT NULL,
-  name varchar(255) NOT NULL,
+  variable_name varchar(255) NOT NULL,
   description varchar(255) DEFAULT NULL,
   PRIMARY KEY (id),
   KEY fk_variable_template (template_id),

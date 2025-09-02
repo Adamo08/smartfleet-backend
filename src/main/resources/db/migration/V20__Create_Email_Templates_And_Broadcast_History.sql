@@ -19,10 +19,12 @@ CREATE TABLE IF NOT EXISTS email_templates (
 
 -- Create email_template_variables table for storing template variables (only if it doesn't exist)
 CREATE TABLE IF NOT EXISTS email_template_variables (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     template_id BIGINT NOT NULL,
-    variable_name VARCHAR(100) NOT NULL,
-    PRIMARY KEY (template_id, variable_name),
-    FOREIGN KEY (template_id) REFERENCES email_templates(id) ON DELETE CASCADE
+    variable_name VARCHAR(255) NOT NULL,
+    description VARCHAR(255) DEFAULT NULL,
+    KEY fk_variable_template (template_id),
+    FOREIGN KEY (template_id) REFERENCES email_templates(id)
 );
 
 -- Create broadcast_history table (only if it doesn't exist)
