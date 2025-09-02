@@ -1,5 +1,5 @@
--- Create email_templates table
-CREATE TABLE email_templates (
+-- Create email_templates table (only if it doesn't exist)
+CREATE TABLE IF NOT EXISTS email_templates (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     type VARCHAR(50) NOT NULL,
@@ -17,16 +17,16 @@ CREATE TABLE email_templates (
     FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
--- Create email_template_variables table for storing template variables
-CREATE TABLE email_template_variables (
+-- Create email_template_variables table for storing template variables (only if it doesn't exist)
+CREATE TABLE IF NOT EXISTS email_template_variables (
     template_id BIGINT NOT NULL,
     variable_name VARCHAR(100) NOT NULL,
     PRIMARY KEY (template_id, variable_name),
     FOREIGN KEY (template_id) REFERENCES email_templates(id) ON DELETE CASCADE
 );
 
--- Create broadcast_history table
-CREATE TABLE broadcast_history (
+-- Create broadcast_history table (only if it doesn't exist)
+CREATE TABLE IF NOT EXISTS broadcast_history (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(200),
     message TEXT NOT NULL,
@@ -56,15 +56,15 @@ CREATE INDEX idx_broadcast_history_status ON broadcast_history(status);
 CREATE INDEX idx_broadcast_history_scheduled_at ON broadcast_history(scheduled_at);
 CREATE INDEX idx_broadcast_history_created_by ON broadcast_history(created_by);
 
--- Insert some default email template metadata (referencing existing Thymeleaf templates)
-INSERT INTO email_templates (name, type, subject, description, category, icon, color, template_file, is_active, created_at) VALUES
+-- Insert some default email template metadata (only if not already present)
+INSERT IGNORE INTO email_templates (name, type, subject, description, category, icon, color, template_file, is_active, created_at) VALUES
 ('Payment Success', 'PAYMENT_SUCCESS', 'Payment Confirmed - Reservation #{{reservationId}}', 'Sent when a payment is successfully processed', 'Payment', '💳', 'green', 'payment-success-email', true, CURRENT_TIMESTAMP),
 ('Payment Failure', 'PAYMENT_FAILURE', 'Payment Failed - Please Try Again', 'Sent when a payment transaction fails', 'Payment', '❌', 'red', 'payment-failure-email', true, CURRENT_TIMESTAMP),
 ('Reservation Confirmed', 'RESERVATION_CONFIRMED', 'Reservation Confirmed - {{vehicle}}', 'Sent when a reservation is successfully confirmed', 'Reservation', '✅', 'green', 'reservation-confirmed-email', true, CURRENT_TIMESTAMP),
 ('Welcome Email', 'ACCOUNT_VERIFICATION', 'Welcome to SmartFleet!', 'Sent to new users upon registration', 'Account', '👋', 'blue', 'welcome-email', true, CURRENT_TIMESTAMP);
 
--- Insert variables for the templates
-INSERT INTO email_template_variables (template_id, variable_name) VALUES
+-- Insert variables for the templates (only if not already present)
+INSERT IGNORE INTO email_template_variables (template_id, variable_name) VALUES
 (1, 'username'), (1, 'reservationId'), (1, 'vehicle'), (1, 'amount'), (1, 'currency'),
 (2, 'username'), (2, 'reservationId'), (2, 'vehicle'), (2, 'amount'), (2, 'currency'), (2, 'paymentId'),
 (3, 'username'), (3, 'reservationId'), (3, 'vehicle'), (3, 'start'), (3, 'end'),

@@ -1,5 +1,16 @@
--- Add refunded_amount column to payments table
-ALTER TABLE payments ADD COLUMN refunded_amount DECIMAL(10, 2) DEFAULT 0.00;
+-- Add refunded_amount column to payments table (only if it doesn't exist)
+-- Since refunded_amount already exists in V0 migration, we just need to ensure it has the right default
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+     WHERE TABLE_SCHEMA = DATABASE() 
+     AND TABLE_NAME = 'payments' 
+     AND COLUMN_NAME = 'refunded_amount') = 0,
+    'ALTER TABLE payments ADD COLUMN refunded_amount DECIMAL(10, 2) DEFAULT 0.00',
+    'SELECT "Column refunded_amount already exists" as message'
+));
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- Update any existing payment that has refunds to calculate the refunded amount
 UPDATE payments 
