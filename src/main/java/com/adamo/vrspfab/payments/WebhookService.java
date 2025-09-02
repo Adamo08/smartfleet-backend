@@ -2,6 +2,7 @@ package com.adamo.vrspfab.payments;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -17,7 +18,6 @@ import java.util.Optional;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class WebhookService {
 
     private final PaymentRepository paymentRepository;
@@ -26,6 +26,21 @@ public class WebhookService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
+
+    public WebhookService(
+            PaymentRepository paymentRepository,
+            RefundRepository refundRepository,
+            PaypalPaymentProvider paypalPaymentProvider,
+            @Qualifier("paypalRestTemplate") RestTemplate restTemplate,
+            ObjectMapper objectMapper,
+            org.springframework.context.ApplicationEventPublisher applicationEventPublisher) {
+        this.paymentRepository = paymentRepository;
+        this.refundRepository = refundRepository;
+        this.paypalPaymentProvider = paypalPaymentProvider;
+        this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
+        this.applicationEventPublisher = applicationEventPublisher;
+    }
 
     @Value("${paypal.api.baseUrl}")
     private String paypalBaseUrl;

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
@@ -27,7 +28,6 @@ import java.util.Optional;
  * avoiding the deprecated PayPal SDK.
  */
 @Slf4j
-@RequiredArgsConstructor
 @Service("paypalPaymentProvider")
 public class PaypalPaymentProvider implements PaymentProvider {
 
@@ -36,6 +36,19 @@ public class PaypalPaymentProvider implements PaymentProvider {
     private final RefundRepository refundRepository;
     private final RestTemplate restTemplate;
     private final ApplicationEventPublisher applicationEventPublisher;
+
+    public PaypalPaymentProvider(
+            PaymentRepository paymentRepository,
+            ReservationRepository reservationRepository,
+            RefundRepository refundRepository,
+            @Qualifier("paypalRestTemplate") RestTemplate restTemplate,
+            ApplicationEventPublisher applicationEventPublisher) {
+        this.paymentRepository = paymentRepository;
+        this.reservationRepository = reservationRepository;
+        this.refundRepository = refundRepository;
+        this.restTemplate = restTemplate;
+        this.applicationEventPublisher = applicationEventPublisher;
+    }
 
     @Value("${paypal.api.baseUrl}")
     private String paypalBaseUrl;
