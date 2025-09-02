@@ -88,7 +88,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:4200", "https://our-frontend.com")); // Allowed origins
+        configuration.setAllowedOrigins(List.of(
+            "http://localhost:4200", 
+            "https://adamo-smartfleet.netlify.app"
+        )); // Allowed origins
         configuration.setAllowedMethods(
                 List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         );
