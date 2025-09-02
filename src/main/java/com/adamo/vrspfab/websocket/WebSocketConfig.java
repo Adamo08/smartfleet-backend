@@ -38,7 +38,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*") // We will adjust this for production
+                .setAllowedOriginPatterns("https://adamo-smartfleet.netlify.app", "http://localhost:4200")
                 .withSockJS();
     }
 
