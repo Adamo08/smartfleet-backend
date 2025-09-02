@@ -1,0 +1,13 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "java -jar target/vrspfab-1.0.0.jar"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+# Railway environment configuration
+[environment]
+NODE_ENV = "production"
+RAILWAY_ENVIRONMENT = "production"
