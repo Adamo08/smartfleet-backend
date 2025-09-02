@@ -1,5 +1,5 @@
--- Create vehicle_categories table
-CREATE TABLE vehicle_categories (
+-- Create vehicle_categories table (only if it doesn't exist)
+CREATE TABLE IF NOT EXISTS vehicle_categories (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
@@ -8,8 +8,8 @@ CREATE TABLE vehicle_categories (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Create vehicle_brands table
-CREATE TABLE vehicle_brands (
+-- Create vehicle_brands table (only if it doesn't exist)
+CREATE TABLE IF NOT EXISTS vehicle_brands (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
@@ -18,8 +18,8 @@ CREATE TABLE vehicle_brands (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Create vehicle_models table
-CREATE TABLE vehicle_models (
+-- Create vehicle_models table (only if it doesn't exist)
+CREATE TABLE IF NOT EXISTS vehicle_models (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     brand_id BIGINT NOT NULL,
@@ -46,33 +46,98 @@ CREATE TABLE opening_hours (
     UNIQUE KEY uk_day_of_week (day_of_week)
 );
 
--- Add new columns to vehicles table
-ALTER TABLE vehicles 
-ADD COLUMN category_id BIGINT,
-ADD COLUMN brand_id BIGINT,
-ADD COLUMN model_id BIGINT;
+-- Add new columns to vehicles table (only if they don't exist)
+-- Note: MySQL doesn't support IF NOT EXISTS for ADD COLUMN, so we use a different approach
+-- We'll add columns only if they don't exist by checking the information_schema
 
--- Add foreign key constraints
-ALTER TABLE vehicles 
-ADD CONSTRAINT fk_vehicles_category FOREIGN KEY (category_id) REFERENCES vehicle_categories(id),
-ADD CONSTRAINT fk_vehicles_brand FOREIGN KEY (brand_id) REFERENCES vehicle_brands(id),
-ADD CONSTRAINT fk_vehicles_model FOREIGN KEY (model_id) REFERENCES vehicle_models(id);
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+     WHERE TABLE_SCHEMA = DATABASE() 
+     AND TABLE_NAME = 'vehicles' 
+     AND COLUMN_NAME = 'category_id') = 0,
+    'ALTER TABLE vehicles ADD COLUMN category_id BIGINT',
+    'SELECT "Column category_id already exists" as message'
+));
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
--- Insert some default data
-INSERT INTO vehicle_categories (name, description) VALUES 
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+     WHERE TABLE_SCHEMA = DATABASE() 
+     AND TABLE_NAME = 'vehicles' 
+     AND COLUMN_NAME = 'brand_id') = 0,
+    'ALTER TABLE vehicles ADD COLUMN brand_id BIGINT',
+    'SELECT "Column brand_id already exists" as message'
+));
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+     WHERE TABLE_SCHEMA = DATABASE() 
+     AND TABLE_NAME = 'vehicles' 
+     AND COLUMN_NAME = 'model_id') = 0,
+    'ALTER TABLE vehicles ADD COLUMN model_id BIGINT',
+    'SELECT "Column model_id already exists" as message'
+));
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add foreign key constraints (only if they don't exist)
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+     WHERE TABLE_SCHEMA = DATABASE() 
+     AND TABLE_NAME = 'vehicles' 
+     AND CONSTRAINT_NAME = 'fk_vehicles_category') = 0,
+    'ALTER TABLE vehicles ADD CONSTRAINT fk_vehicles_category FOREIGN KEY (category_id) REFERENCES vehicle_categories(id)',
+    'SELECT "Constraint fk_vehicles_category already exists" as message'
+));
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+     WHERE TABLE_SCHEMA = DATABASE() 
+     AND TABLE_NAME = 'vehicles' 
+     AND CONSTRAINT_NAME = 'fk_vehicles_brand') = 0,
+    'ALTER TABLE vehicles ADD CONSTRAINT fk_vehicles_brand FOREIGN KEY (brand_id) REFERENCES vehicle_brands(id)',
+    'SELECT "Constraint fk_vehicles_brand already exists" as message'
+));
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+     WHERE TABLE_SCHEMA = DATABASE() 
+     AND TABLE_NAME = 'vehicles' 
+     AND CONSTRAINT_NAME = 'fk_vehicles_model') = 0,
+    'ALTER TABLE vehicles ADD CONSTRAINT fk_vehicles_model FOREIGN KEY (model_id) REFERENCES vehicle_models(id)',
+    'SELECT "Constraint fk_vehicles_model already exists" as message'
+));
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Insert some default data (only if not already present)
+INSERT IGNORE INTO vehicle_categories (name, description) VALUES 
 ('Personal', 'Personal vehicles for individual use'),
 ('Commercial', 'Commercial vehicles for business use'),
 ('Luxury', 'High-end luxury vehicles'),
 ('Utility', 'Utility and work vehicles');
 
-INSERT INTO vehicle_brands (name, description) VALUES 
+INSERT IGNORE INTO vehicle_brands (name, description) VALUES 
 ('Toyota', 'Japanese automotive manufacturer'),
 ('Honda', 'Japanese automotive manufacturer'),
 ('Ford', 'American automotive manufacturer'),
 ('BMW', 'German luxury automotive manufacturer'),
 ('Mercedes-Benz', 'German luxury automotive manufacturer');
 
-INSERT INTO vehicle_models (name, brand_id, description) VALUES 
+INSERT IGNORE INTO vehicle_models (name, brand_id, description) VALUES 
 ('Camry', 1, 'Mid-size sedan'),
 ('Corolla', 1, 'Compact sedan'),
 ('Civic', 2, 'Compact sedan'),

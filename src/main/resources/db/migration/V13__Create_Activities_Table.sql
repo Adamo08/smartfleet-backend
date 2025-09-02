@@ -2,7 +2,7 @@
 -- Author: SmartFleet System
 -- Date: $(date)
 
-CREATE TABLE activities (
+CREATE TABLE IF NOT EXISTS activities (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     activity_type VARCHAR(50) NOT NULL,
     title VARCHAR(200) NOT NULL,
@@ -23,8 +23,8 @@ CREATE TABLE activities (
     INDEX idx_activity_related_entity (related_entity_type, related_entity_id)
 );
 
--- Add some sample data
-INSERT INTO activities (activity_type, title, description, user_id, related_entity_type, related_entity_id, metadata) 
+-- Add some sample data (only if not already present)
+INSERT IGNORE INTO activities (activity_type, title, description, user_id, related_entity_type, related_entity_id, metadata) 
 VALUES 
     ('SYSTEM_EVENT', 'System Initialized', 'Activity tracking system has been initialized and is ready to track activities', NULL, 'SYSTEM', NULL, '{"version": "1.0", "feature": "activity_tracking"}'),
     ('USER_REGISTRATION', 'Welcome Message', 'Activity tracking is now available for all user actions', NULL, 'SYSTEM', NULL, '{"message": "Track all important events"}');
