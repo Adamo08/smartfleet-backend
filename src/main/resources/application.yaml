@@ -71,6 +71,20 @@ spring:
             enable: true
           from: ${DEFAULT_FROM}
 
+# Email Provider Configuration
+email:
+  provider:
+    priority: ${EMAIL_PROVIDER_PRIORITY:sendpulse,smtp} # Priority order: sendpulse first, then smtp as fallback
+
+# SendPulse Configuration (for Railway deployment)
+sendpulse:
+  api:
+    id: ${SENDPULSE_API_ID:}
+    secret: ${SENDPULSE_API_SECRET:}
+  from:
+    email: ${SENDPULSE_FROM_EMAIL:noreply@smartfleet.com}
+    name: ${SENDPULSE_FROM_NAME:SmartFleet}
+
 paypal:
   api:
         baseUrl: https://api-m.sandbox.paypal.com # Change to https://api-m.paypal.com for live

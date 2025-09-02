@@ -1,16 +1,14 @@
 package com.adamo.vrspfab.notifications;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -18,8 +16,11 @@ import java.util.Map;
 @Slf4j
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    private final List<EmailProvider> emailProviders;
     private final TemplateEngine templateEngine;
+
+    @Value("${email.provider.priority:sendpulse,smtp}")
+    private String providerPriority;
 
     @Async
     public void sendNotificationEmail(String to, String subject, String templateName, Map<String, Object> templateModel) {
@@ -27,22 +28,48 @@ public class EmailService {
         context.setVariables(templateModel);
 
         String htmlBody = templateEngine.process(templateName, context);
-
-        try {
-            MimeMessage mimeMessage = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(htmlBody, true);
-            // No need to set From here, it's done in config (app yaml file)
-            // helper.setFrom("noreply@vrspfab.com");
-
-            mailSender.send(mimeMessage);
-            log.info("Sent email notification to {} with subject '{}'", to, subject);
-        } catch (MessagingException e) {
-            log.error("Failed to send email to {}: {}", to, e.getMessage());
+        
+        // Try to send email using available providers in priority order
+        boolean emailSent = sendEmailWithFallback(to, subject, htmlBody);
+        
+        if (emailSent) {
+            log.info("✅ Email notification sent successfully to {} with subject '{}'", to, subject);
+        } else {
+            log.error("❌ Failed to send email to {} using all available providers", to);
             // Optionally, throw a custom exception or queue for retry
         }
+    }
+
+    /**
+     * Sends email using available providers in priority order with fallback.
+     * 
+     * @param to Recipient email address
+     * @param subject Email subject
+     * @param htmlContent HTML content
+     * @return true if email was sent successfully, false otherwise
+     */
+    private boolean sendEmailWithFallback(String to, String subject, String htmlContent) {
+        String[] priorities = providerPriority.split(",");
+        
+        for (String priority : priorities) {
+            String providerName = priority.trim().toLowerCase();
+            
+            for (EmailProvider provider : emailProviders) {
+                if (provider.getProviderName().toLowerCase().equals(providerName) && provider.isAvailable()) {
+                    log.info("Attempting to send email using {} provider", provider.getProviderName());
+                    
+                    if (provider.sendEmail(to, subject, htmlContent)) {
+                        log.info("✅ Email sent successfully using {} provider", provider.getProviderName());
+                        return true;
+                    } else {
+                        log.warn("⚠️ Failed to send email using {} provider, trying next provider", provider.getProviderName());
+                    }
+                }
+            }
+        }
+        
+        log.error("❌ All email providers failed to send email to {}", to);
+        return false;
     }
 
 
