@@ -5,6 +5,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+      repair-at-startup: true
     show-sql: true
     properties:
       hibernate:
