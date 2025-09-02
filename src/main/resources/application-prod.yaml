@@ -4,12 +4,19 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
-      repair-at-startup: true
-    show-sql: true
+      ddl-auto: validate
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    repair-on-migrate: true
+    validate-on-migrate: false
+    locations: classpath:db/migration
   
   # CORS configuration for production
   web:
