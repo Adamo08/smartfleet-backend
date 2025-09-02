@@ -97,24 +97,6 @@ CREATE TABLE vehicles (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 
-CREATE TABLE slots (
-  id bigint NOT NULL AUTO_INCREMENT,
-  vehicle_id bigint NOT NULL,
-  start_time datetime(6) NOT NULL,
-  end_time datetime(6) NOT NULL,
-  is_available tinyint(1) NOT NULL DEFAULT 1,
-  slot_type varchar(255) NOT NULL,
-  price decimal(10,2) DEFAULT NULL,
-  reservation_id bigint DEFAULT NULL,
-  created_at datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
-  updated_at datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-  PRIMARY KEY (id),
-  KEY fk_slots_vehicle (vehicle_id),
-  KEY fk_slots_reservation (reservation_id),
-  CONSTRAINT fk_slots_vehicle FOREIGN KEY (vehicle_id) REFERENCES vehicles (id),
-  CONSTRAINT fk_slots_reservation FOREIGN KEY (reservation_id) REFERENCES reservations (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
 CREATE TABLE reservations (
   id bigint NOT NULL AUTO_INCREMENT,
   user_id bigint NOT NULL,
@@ -133,6 +115,24 @@ CREATE TABLE reservations (
   KEY idx_reservation_status (status),
   CONSTRAINT fk_reservation_user FOREIGN KEY (user_id) REFERENCES users (id),
   CONSTRAINT fk_reservation_vehicle FOREIGN KEY (vehicle_id) REFERENCES vehicles (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE slots (
+  id bigint NOT NULL AUTO_INCREMENT,
+  vehicle_id bigint NOT NULL,
+  start_time datetime(6) NOT NULL,
+  end_time datetime(6) NOT NULL,
+  is_available tinyint(1) NOT NULL DEFAULT 1,
+  slot_type varchar(255) NOT NULL,
+  price decimal(10,2) DEFAULT NULL,
+  reservation_id bigint DEFAULT NULL,
+  created_at datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id),
+  KEY fk_slots_vehicle (vehicle_id),
+  KEY fk_slots_reservation (reservation_id),
+  CONSTRAINT fk_slots_vehicle FOREIGN KEY (vehicle_id) REFERENCES vehicles (id),
+  CONSTRAINT fk_slots_reservation FOREIGN KEY (reservation_id) REFERENCES reservations (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE payments (
