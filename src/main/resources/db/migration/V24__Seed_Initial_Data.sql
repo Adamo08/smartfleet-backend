@@ -83,7 +83,7 @@ INSERT INTO vehicle_models (name, brand_id, description, is_active) VALUES
 ('Cybertruck', 13, 'An all-electric pickup truck.', 1);
 
 INSERT INTO vehicle_categories (name, description, is_active, icon_url) VALUES
-('Hatchbackk', 'Small car with an upward-swinging rear door.', 1, 'https://api.iconify.design/mdi/car-hatchback.svg'),
+('Hatchback', 'Small car with an upward-swinging rear door.', 1, 'https://api.iconify.design/mdi/car-hatchback.svg'),
 ('SUV', 'Sport Utility Vehicle with higher ground clearance.', 1, 'https://api.iconify.design/mdi/car-suv.svg'),
 ('Crossover', 'Car-based SUV blending comfort and utility.', 1, 'https://api.iconify.design/mdi/car-outline.svg'),
 ('Pickup Truck', 'Light-duty truck with open cargo bed.', 1, 'https://api.iconify.design/mdi/car-pickup.svg'),
@@ -104,40 +104,5 @@ INSERT INTO vehicle_categories (name, description, is_active, icon_url) VALUES
 ('Crossover SUV', 'Smaller SUV with car-like handling.', 1, 'https://api.iconify.design/mdi/car-suv.svg'),
 ('Roadster', 'Lightweight two-seater open-top.', 1, 'https://api.iconify.design/mdi/car-convertible.svg'),
 ('Muscle Car', 'Powerful, torque-heavy performance car.', 1, 'https://api.iconify.design/mdi/engine.svg'),
-('Luxury SUV', 'High-end SUV with premium features.', 1, 'https://api/iconify.design/mdi/crown-outline.svg'),
+('Luxury SUV', 'High-end SUV with premium features.', 1, 'https://api.iconify.design/mdi/crown-outline.svg'),
 ('Super SUV', 'Extreme-performance SUV.', 1, 'https://api.iconify.design/mdi/speedometer.svg');
-
-
-
-
-
-
-
--- Inserting email templates and variables
-
-INSERT INTO email_templates (name, type, subject, description, category, icon, color, template_file, is_active, usage_count, created_by) VALUES
-('Payment Success', 'PAYMENT_SUCCESS', 'Payment Confirmed - Reservation #{{reservationId}}', 'Sent when a payment is successfully processed', 'Payment', '💳', 'green', 'payment-success-email', 0, 0, NULL),
-('Payment Failure', 'PAYMENT_FAILURE', 'Payment Failed - Please Try Again', 'Sent when a payment transaction fails', 'Payment', '❌', 'red', 'payment-failure-email', 1, 0, NULL),
-('Reservation Confirmed', 'RESERVATION_CONFIRMED', 'Reservation Confirmed - {{vehicle}}', 'Sent when a reservation is successfully confirmed', 'Reservation', '✅', 'green', 'reservation-confirmed-email', 1, 0, NULL),
-('Welcome Email', 'ACCOUNT_VERIFICATION', 'Welcome to SmartFleet!', 'Sent to new users upon registration', 'Account', '👋', 'blue', 'welcome-email', 1, 0, NULL);
-
-INSERT INTO email_template_variables (template_id, variable_name) VALUES
-(1, 'amount'),
-(1, 'currency'),
-(1, 'reservationId'),
-(1, 'username'),
-(1, 'vehicle'),
-(2, 'amount'),
-(2, 'currency'),
-(2, 'paymentId'),
-(2, 'reservationId'),
-(2, 'username'),
-(2, 'vehicle'),
-(3, 'end'),
-(3, 'reservationId'),
-(3, 'start'),
-(3, 'username'),
-(3, 'vehicle'),
-(4, 'username'),
-(4, 'year');
-
