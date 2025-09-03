@@ -13,7 +13,19 @@ public class NotificationSecurityRules implements SecurityRules {
         registry
                 // Admin-specific endpoints
                 .requestMatchers(HttpMethod.POST, "/notifications/broadcast").hasRole("ADMIN")
-                // General user endpoints
-                .requestMatchers("/notifications/**").authenticated();
+                .requestMatchers(HttpMethod.GET, "/notifications/admin").hasRole("ADMIN")
+                
+                // Enhanced notification admin endpoints
+                .requestMatchers("/api/admin/notifications/**").hasRole("ADMIN")
+                
+                // User notification preferences endpoints
+                .requestMatchers("/user/preferences/notifications/**").authenticated()
+                
+                // Authenticated user endpoints
+                .requestMatchers(HttpMethod.GET, "/notifications").authenticated()
+                .requestMatchers(HttpMethod.PATCH, "/notifications/{id}/read").authenticated()
+                .requestMatchers(HttpMethod.POST, "/notifications/mark-all-as-read").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/notifications/{id}").authenticated()
+                .requestMatchers(HttpMethod.POST, "/notifications/test").authenticated();
     }
 }

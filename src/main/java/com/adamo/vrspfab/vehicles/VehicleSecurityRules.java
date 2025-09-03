@@ -18,6 +18,12 @@ public class VehicleSecurityRules implements SecurityRules {
                 .requestMatchers(HttpMethod.GET, "/vehicles").permitAll()
                 .requestMatchers(HttpMethod.GET, "/vehicles/{id}").permitAll()
                 .requestMatchers(HttpMethod.GET, "/vehicles/{id}/availability").permitAll()
+                
+                // Publicly accessible endpoints for vehicle brands, categories, and models
+                .requestMatchers(HttpMethod.GET, "/vehicles/brands/active").permitAll()
+                .requestMatchers(HttpMethod.GET, "/vehicles/categories/active").permitAll()
+                .requestMatchers(HttpMethod.GET, "/vehicles/models/active").permitAll()
+                .requestMatchers(HttpMethod.GET, "/vehicles/models/active/brand/{brandId}").permitAll()
 
                 // Admin-only access for creating, updating, deleting, and viewing reservations
                 .requestMatchers(HttpMethod.GET, "/vehicles/{id}/reservations").hasRole("ADMIN")
