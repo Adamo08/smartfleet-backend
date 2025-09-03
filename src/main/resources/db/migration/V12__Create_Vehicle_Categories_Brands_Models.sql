@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS vehicle_categories (
     description TEXT,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    icon_url VARCHAR(255) DEFAULT NULL
 );
 
 -- Create vehicle_brands table (only if it doesn't exist)
@@ -15,7 +16,9 @@ CREATE TABLE IF NOT EXISTS vehicle_brands (
     description TEXT,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    country_of_origin VARCHAR(255) DEFAULT NULL,
+    logo_url VARCHAR(255) DEFAULT NULL
 );
 
 -- Create vehicle_models table (only if it doesn't exist)
@@ -123,25 +126,4 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- Insert some default data (only if not already present)
-INSERT IGNORE INTO vehicle_categories (name, description) VALUES 
-('Personal', 'Personal vehicles for individual use'),
-('Commercial', 'Commercial vehicles for business use'),
-('Luxury', 'High-end luxury vehicles'),
-('Utility', 'Utility and work vehicles');
-
-INSERT IGNORE INTO vehicle_brands (name, description) VALUES 
-('Toyota', 'Japanese automotive manufacturer'),
-('Honda', 'Japanese automotive manufacturer'),
-('Ford', 'American automotive manufacturer'),
-('BMW', 'German luxury automotive manufacturer'),
-('Mercedes-Benz', 'German luxury automotive manufacturer');
-
-INSERT IGNORE INTO vehicle_models (name, brand_id, description) VALUES 
-('Camry', 1, 'Mid-size sedan'),
-('Corolla', 1, 'Compact sedan'),
-('Civic', 2, 'Compact sedan'),
-('Accord', 2, 'Mid-size sedan'),
-('F-150', 3, 'Full-size pickup truck'),
-('3 Series', 4, 'Compact luxury sedan'),
-('C-Class', 5, 'Compact luxury sedan');
+-- Data insertion will be handled in V24 migration
