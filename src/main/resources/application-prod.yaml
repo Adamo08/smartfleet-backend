@@ -35,6 +35,15 @@ app:
   frontend:
     url: ${FRONTEND_URL:https://adamo-smartfleet.netlify.app/}
 
+# OAuth2 redirect URI configuration for production
+oauth2:
+  redirect-uri: ${OAUTH2_REDIRECT_URI:https://adamo-smartfleet-backend-api.up.railway.app}
+
+# Server configuration for Railway deployment
+server:
+  forward-headers-strategy: framework
+  use-forward-headers: true
+
 # Production logging configuration
 logging:
   level:

@@ -7,6 +7,9 @@ import com.adamo.vrspfab.users.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,6 +39,10 @@ public class AuthController {
     private final UserMapper userMapper;
     private final AuthService authService;
     private final UserService userService;
+    private final ClientRegistrationRepository clientRegistrationRepository;
+
+    @Value("${OAUTH2_REDIRECT_URI:https://adamo-smartfleet-backend-api.up.railway.app}")
+    private String baseUrl;
 
     /**
      * This method handles user login requests.
@@ -126,6 +133,31 @@ public class AuthController {
         // The user will be redirected to the OAuth provider
         // After successful authentication, they'll be redirected back to the callback URL
         response.sendRedirect("/oauth2/authorization/" + provider);
+    }
+
+    /**
+     * Debug endpoint to check OAuth2 configuration
+     */
+    @GetMapping("/oauth/debug")
+    public ResponseEntity<String> debugOAuth2() {
+        StringBuilder debug = new StringBuilder();
+        debug.append("Base URL: ").append(baseUrl).append("\n");
+        
+        try {
+            ClientRegistration google = clientRegistrationRepository.findByRegistrationId("google");
+            if (google != null) {
+                debug.append("Google Redirect URI: ").append(google.getRedirectUri()).append("\n");
+            }
+            
+            ClientRegistration facebook = clientRegistrationRepository.findByRegistrationId("facebook");
+            if (facebook != null) {
+                debug.append("Facebook Redirect URI: ").append(facebook.getRedirectUri()).append("\n");
+            }
+        } catch (Exception e) {
+            debug.append("Error: ").append(e.getMessage()).append("\n");
+        }
+        
+        return ResponseEntity.ok(debug.toString());
     }
 
     @Operation(summary = "Get current authenticated user",
