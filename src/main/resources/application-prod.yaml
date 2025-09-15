@@ -41,6 +41,7 @@ oauth2:
 
 # Server configuration for Railway deployment
 server:
+  port: ${PORT:8080}
   forward-headers-strategy: framework
 
 # Production logging configuration
@@ -61,6 +62,11 @@ management:
     web:
       exposure:
         include: health,info,metrics
+      base-path: /actuator
   endpoint:
     health:
-      show-details: when-authorized
+      show-details: always
+      show-components: always
+  health:
+    defaults:
+      enabled: true
