@@ -30,6 +30,11 @@ spring:
       allow-credentials: true
       max-age: 3600
 
+  # Disable OAuth2 client during startup to prevent hanging
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration
+
 # Frontend configuration for OAuth redirects
 app:
   frontend:
@@ -38,6 +43,7 @@ app:
 # OAuth2 redirect URI configuration for production
 oauth2:
   redirect-uri: ${OAUTH2_REDIRECT_URI:https://adamo-smartfleet-backend-api.up.railway.app}
+
 
 # Server configuration for Railway deployment
 server:
