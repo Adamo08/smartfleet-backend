@@ -1,6 +1,7 @@
 package com.adamo.vrspfab.auth;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
@@ -11,18 +12,19 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.IdTokenClaimNames;
 
 @Configuration
+@ConditionalOnProperty(name = "oauth2.enabled", havingValue = "true", matchIfMissing = false)
 public class OAuth2Config {
 
-    @Value("${spring.security.oauth2.client.registration.google.client-id}")
+    @Value("${spring.security.oauth2.client.registration.google.client-id:}")
     private String googleClientId;
 
-    @Value("${spring.security.oauth2.client.registration.google.client-secret}")
+    @Value("${spring.security.oauth2.client.registration.google.client-secret:}")
     private String googleClientSecret;
 
-    @Value("${spring.security.oauth2.client.registration.facebook.client-id}")
+    @Value("${spring.security.oauth2.client.registration.facebook.client-id:}")
     private String facebookClientId;
 
-    @Value("${spring.security.oauth2.client.registration.facebook.client-secret}")
+    @Value("${spring.security.oauth2.client.registration.facebook.client-secret:}")
     private String facebookClientSecret;
 
     @Value("${OAUTH2_REDIRECT_URI:https://adamo-smartfleet-backend-api.up.railway.app}")

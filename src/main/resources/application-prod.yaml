@@ -30,18 +30,15 @@ spring:
       allow-credentials: true
       max-age: 3600
 
-  # Disable OAuth2 client during startup to prevent hanging
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration
 
 # Frontend configuration for OAuth redirects
 app:
   frontend:
     url: ${FRONTEND_URL:https://adamo-smartfleet.netlify.app/}
 
-# OAuth2 redirect URI configuration for production
+# OAuth2 configuration for production
 oauth2:
+  enabled: false
   redirect-uri: ${OAUTH2_REDIRECT_URI:https://adamo-smartfleet-backend-api.up.railway.app}
 
 

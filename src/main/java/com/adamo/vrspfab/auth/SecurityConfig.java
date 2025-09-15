@@ -2,6 +2,7 @@ package com.adamo.vrspfab.auth;
 
 import com.adamo.vrspfab.common.SecurityRules;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,9 +38,12 @@ public class SecurityConfig {
     @Qualifier("userDetailsServiceImpl")
     private final UserDetailsService userDetailsService;
 
-    private final CustomOAuth2UserService customOAuth2UserService;
-    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
-    private final ClientRegistrationRepository clientRegistrationRepository;
+    @Autowired(required = false)
+    private CustomOAuth2UserService customOAuth2UserService;
+    @Autowired(required = false)
+    private OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    @Autowired(required = false)
+    private ClientRegistrationRepository clientRegistrationRepository;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -74,11 +78,13 @@ public class SecurityConfig {
                     c.requestMatchers("OPTIONS", "/**").permitAll();
                     c.anyRequest().authenticated();
                 })
-                .oauth2Login(o -> o
-                        .clientRegistrationRepository(clientRegistrationRepository)
-                        .userInfoEndpoint(u -> u.userService(customOAuth2UserService))
-                        .successHandler(oAuth2AuthenticationSuccessHandler)
-                )
+                .oauth2Login(o -> {
+                    if (clientRegistrationRepository != null && customOAuth2UserService != null && oAuth2AuthenticationSuccessHandler != null) {
+                        o.clientRegistrationRepository(clientRegistrationRepository)
+                         .userInfoEndpoint(u -> u.userService(customOAuth2UserService))
+                         .successHandler(oAuth2AuthenticationSuccessHandler);
+                    }
+                })
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(c -> {
                     c.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED));
