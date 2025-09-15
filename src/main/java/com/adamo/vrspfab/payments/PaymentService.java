@@ -9,6 +9,7 @@ import com.adamo.vrspfab.users.User;
 import com.github.benmanes.caffeine.cache.Cache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -31,6 +32,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final ReservationRepository reservationRepository;
     private final SecurityUtilsService securityUtilsService;
+    @Qualifier("paymentIdempotencyCache")
     private final Cache<String, PaymentResponseDto> idempotencyCache;
     private final PaymentMapper paymentMapper;
     private final com.adamo.vrspfab.notifications.NotificationService notificationService;

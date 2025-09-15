@@ -55,6 +55,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long>,
     List<Reservation> findOverlappingReservations(Long vehicleId, LocalDateTime startDate, LocalDateTime endDate);
 
     @EntityGraph(attributePaths = {"user", "vehicle", "slots"}, type = EntityGraph.EntityGraphType.LOAD)
+    @Query("SELECT r FROM Reservation r WHERE r.vehicle.id = :vehicleId AND r.status <> 'CANCELLED' AND r.startDate >= :startDate AND r.endDate <= :endDate")
+    List<Reservation> findByVehicleIdAndDateRange(Long vehicleId, LocalDateTime startDate, LocalDateTime endDate);
+
+    @EntityGraph(attributePaths = {"user", "vehicle", "slots"}, type = EntityGraph.EntityGraphType.LOAD)
     @Query("SELECT r FROM Reservation r WHERE r.vehicle.id = :vehicleId")
     Page<Reservation> findByVehicleId(Long vehicleId, Pageable pageable);
 

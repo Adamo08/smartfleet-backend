@@ -16,6 +16,7 @@ import com.adamo.vrspfab.vehicles.VehicleService;
 import com.adamo.vrspfab.vehicles.Vehicle;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -28,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Service class for handling reservation-related operations for authenticated users.
@@ -283,6 +285,7 @@ public class ReservationService {
      * @return List of available slots
      */
     @Transactional(readOnly = true)
+    @Cacheable(value = "availableSlots", key = "#vehicleId + '_' + #startDate + '_' + #endDate + '_' + #bookingType")
     public List<SlotDto> getAvailableSlots(Long vehicleId, LocalDateTime startDate, LocalDateTime endDate, String bookingType) {
         log.debug("Getting available slots for vehicle {} from {} to {} with booking type {}", vehicleId, startDate, endDate, bookingType);
         
@@ -292,6 +295,27 @@ public class ReservationService {
         
         // Generate slots based on booking type
         return generateSlotsByBookingType(vehicle, startDate, endDate, bookingType);
+    }
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "unavailableSlots", key = "#vehicleId + '_' + #startDate + '_' + #endDate + '_' + #bookingType")
+    public List<SlotDto> getUnavailableSlots(Long vehicleId, LocalDateTime startDate, LocalDateTime endDate, String bookingType) {
+        log.debug("Getting unavailable slots for vehicle {} from {} to {} with booking type {}", vehicleId, startDate, endDate, bookingType);
+        
+        // Get existing reservations for the vehicle in the date range
+        List<Reservation> existingReservations = reservationRepository.findByVehicleIdAndDateRange(vehicleId, startDate, endDate);
+        
+        // Convert reservations to unavailable slots
+        return existingReservations.stream()
+                .map(reservation -> {
+                    SlotDto slotDto = new SlotDto();
+                    slotDto.setStartTime(reservation.getStartDate());
+                    slotDto.setEndTime(reservation.getEndDate());
+                    slotDto.setAvailable(false);
+                    slotDto.setVehicleId(vehicleId);
+                    return slotDto;
+                })
+                .collect(Collectors.toList());
     }
 
     /**

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import com.adamo.vrspfab.slots.SlotDto;
+import com.adamo.vrspfab.common.validation.ValidBookingType;
 
 /**
  * REST controller for authenticated users to manage their own reservations.
@@ -193,10 +194,28 @@ public class ReservationController {
             @PathVariable Long vehicleId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
-            @RequestParam(defaultValue = "DAILY") String bookingType) {
+            @RequestParam(defaultValue = "DAILY") @ValidBookingType String bookingType) {
         
         List<SlotDto> availableSlots = reservationService.getAvailableSlots(vehicleId, startDate, endDate, bookingType);
         return ResponseEntity.ok(availableSlots);
+    }
+
+    @Operation(summary = "Get unavailable slots for a vehicle",
+               description = "Retrieves unavailable time slots for a specific vehicle within a date range.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved unavailable slots"),
+                       @ApiResponse(responseCode = "404", description = "Vehicle not found"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @GetMapping("/vehicles/{vehicleId}/unavailable-slots")
+    public ResponseEntity<List<SlotDto>> getUnavailableSlots(
+            @PathVariable Long vehicleId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(defaultValue = "DAILY") @ValidBookingType String bookingType) {
+        
+        List<SlotDto> unavailableSlots = reservationService.getUnavailableSlots(vehicleId, startDate, endDate, bookingType);
+        return ResponseEntity.ok(unavailableSlots);
     }
 
     /**

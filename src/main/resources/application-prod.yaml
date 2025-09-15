@@ -42,7 +42,6 @@ oauth2:
 # Server configuration for Railway deployment
 server:
   forward-headers-strategy: framework
-  use-forward-headers: true
 
 # Production logging configuration
 logging:

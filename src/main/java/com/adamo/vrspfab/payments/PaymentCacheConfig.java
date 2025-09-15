@@ -6,8 +6,8 @@ import org.springframework.context.annotation.Configuration;
 import java.util.concurrent.TimeUnit;
 
 @Configuration
-public class CacheConfig {
-    @Bean
+public class PaymentCacheConfig {
+    @Bean("paymentIdempotencyCache")
     public com.github.benmanes.caffeine.cache.Cache<String, PaymentResponseDto> idempotencyCache() {
         return Caffeine.newBuilder()
                 .expireAfterWrite(10, TimeUnit.MINUTES)
