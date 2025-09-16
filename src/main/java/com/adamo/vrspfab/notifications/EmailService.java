@@ -2,6 +2,7 @@ package com.adamo.vrspfab.notifications;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,20 @@ public class EmailService {
 
     @Value("${email.provider.priority:sendpulse,smtp}")
     private String providerPriority;
+
+    @PostConstruct
+    public void logProviderAvailability() {
+        log.info("[Email] Provider priority: {}", providerPriority);
+        for (EmailProvider provider : emailProviders) {
+            boolean available = false;
+            try {
+                available = provider.isAvailable();
+            } catch (Exception e) {
+                log.warn("[Email] Provider {} availability check threw: {}", provider.getProviderName(), e.getMessage());
+            }
+            log.info("[Email] Provider {} available: {}", provider.getProviderName(), available);
+        }
+    }
 
     @Async
     public void sendNotificationEmail(String to, String subject, String templateName, Map<String, Object> templateModel) {

@@ -1,6 +1,7 @@
 package com.adamo.vrspfab.notifications;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -34,11 +35,14 @@ public class SendPulseEmailProvider implements EmailProvider {
     public SendPulseEmailProvider(@Qualifier("emailRestTemplate") RestTemplate restTemplate, ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
-        // Log availability at startup (mask secrets)
+    }
+
+    @PostConstruct
+    public void logAvailability() {
         boolean hasId = apiId != null && !apiId.isEmpty();
         boolean hasSecret = apiSecret != null && !apiSecret.isEmpty();
         String maskedId = hasId ? apiId.substring(0, Math.min(4, apiId.length())) + "***" : "<empty>";
-        log.info("[SendPulse] Provider constructed. API ID set: {}, API Secret set: {}, From: {} <{}>. API ID preview: {}",
+        log.info("[SendPulse] Provider ready. API ID set: {}, API Secret set: {}, From: {} <{}>. API ID preview: {}",
                 hasId, hasSecret, fromName, fromEmail, maskedId);
     }
 
