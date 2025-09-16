@@ -3,6 +3,7 @@ package com.adamo.vrspfab.notifications;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
 public class EmailConfig {
@@ -21,7 +22,7 @@ public class EmailConfig {
      */
     @Bean(name = "taskExecutor")
     public org.springframework.core.task.TaskExecutor primaryTaskExecutor() {
-        org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor executor = new org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor();
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(4);
         executor.setMaxPoolSize(8);
         executor.setQueueCapacity(100);
