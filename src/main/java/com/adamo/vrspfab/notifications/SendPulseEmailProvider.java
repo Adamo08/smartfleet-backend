@@ -34,6 +34,12 @@ public class SendPulseEmailProvider implements EmailProvider {
     public SendPulseEmailProvider(@Qualifier("emailRestTemplate") RestTemplate restTemplate, ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
+        // Log availability at startup (mask secrets)
+        boolean hasId = apiId != null && !apiId.isEmpty();
+        boolean hasSecret = apiSecret != null && !apiSecret.isEmpty();
+        String maskedId = hasId ? apiId.substring(0, Math.min(4, apiId.length())) + "***" : "<empty>";
+        log.info("[SendPulse] Provider constructed. API ID set: {}, API Secret set: {}, From: {} <{}>. API ID preview: {}",
+                hasId, hasSecret, fromName, fromEmail, maskedId);
     }
 
     @Override

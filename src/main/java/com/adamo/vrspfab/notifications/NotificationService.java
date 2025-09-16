@@ -90,7 +90,7 @@ public class NotificationService {
 
         // Step 4: Dispatch via Email Channel
         if (preferences.isEmailEnabled()) {
-            log.info("📧 Sending email notification to user: {}", user.getEmail());
+            log.info("📧 Queuing async email notification to user: {}", user.getEmail());
             TemplateInfo templateInfo = resolveTemplate(type);
             Map<String, Object> emailModel = new HashMap<>();
             emailModel.put("username", user.getFirstName());
@@ -102,7 +102,8 @@ public class NotificationService {
             }
             try {
                 emailService.sendNotificationEmail(user.getEmail(), templateInfo.subject, templateInfo.templateName, emailModel);
-                log.info("✅ Email notification sent successfully to user: {}", user.getEmail());
+                // Success will be logged by EmailService/provider when the provider returns true
+                log.debug("📧 Email task dispatched for user: {}", user.getEmail());
             } catch (Exception e) {
                 log.error("❌ Failed to send email notification to user {}: {}", user.getEmail(), e.getMessage(), e);
             }
