@@ -17,9 +17,9 @@ public class UserSecurityRules implements SecurityRules {
                 // User management endpoints - ADMIN only
                 .requestMatchers(HttpMethod.GET, "/users").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/users/{id}").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/users/{id}").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/users/{id}").authenticated()
                 .requestMatchers(HttpMethod.PATCH, "/users/{id}/role").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/users/{id}").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.POST, "/users/{id}/change-password").hasRole("ADMIN");
+                .requestMatchers(HttpMethod.POST, "/users/{id}/change-password").authenticated();
     }
 }
