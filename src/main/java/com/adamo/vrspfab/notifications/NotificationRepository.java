@@ -28,4 +28,14 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      * Finds all unread notifications for a specific user.
      */
     List<Notification> findAllByUserAndReadFalse(User user);
+
+    /**
+     * Retrieves a paginated list of unread notifications for a specific user, ordered by creation date descending.
+     */
+    Page<Notification> findByUserAndReadFalseOrderByCreatedAtDesc(User user, Pageable pageable);
+
+    /**
+     * Counts unread notifications for a specific user.
+     */
+    long countByUserAndReadFalse(User user);
 }

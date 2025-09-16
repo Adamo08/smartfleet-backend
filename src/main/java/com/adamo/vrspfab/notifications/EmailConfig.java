@@ -15,4 +15,18 @@ public class EmailConfig {
     public RestTemplate emailRestTemplate() {
         return new RestTemplate();
     }
+
+    /**
+     * Primary task executor bean for @Async to avoid ambiguous executors warning.
+     */
+    @Bean(name = "taskExecutor")
+    public org.springframework.core.task.TaskExecutor primaryTaskExecutor() {
+        org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor executor = new org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(4);
+        executor.setMaxPoolSize(8);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("Async-");
+        executor.initialize();
+        return executor;
+    }
 }

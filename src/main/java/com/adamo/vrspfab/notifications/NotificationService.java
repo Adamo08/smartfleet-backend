@@ -261,6 +261,25 @@ public class NotificationService {
     }
 
     /**
+     * Retrieves unread notifications for the current user (paginated).
+     */
+    @Transactional(readOnly = true)
+    public Page<NotificationDto> getUnreadNotificationsForCurrentUser(Pageable pageable) {
+        User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+        return notificationRepository.findByUserAndReadFalseOrderByCreatedAtDesc(currentUser, pageable)
+                .map(notificationMapper::toDto);
+    }
+
+    /**
+     * Counts unread notifications for the current user.
+     */
+    @Transactional(readOnly = true)
+    public long getUnreadNotificationsCountForCurrentUser() {
+        User currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+        return notificationRepository.countByUserAndReadFalse(currentUser);
+    }
+
+    /**
      * Marks a specific notification as read.
      *
      * @param notificationId The ID of the notification to mark as read.

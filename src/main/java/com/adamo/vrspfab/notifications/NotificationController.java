@@ -37,6 +37,31 @@ public class NotificationController {
         return notificationService.getNotificationsForCurrentUser(pageable);
     }
 
+    @Operation(summary = "Get UNREAD notifications for the current user",
+               description = "Returns a paginated list of unread notifications for the authenticated user.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved unread notifications"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @GetMapping("/unread")
+    public Page<NotificationDto> getUnreadNotificationsForCurrentUser(Pageable pageable) {
+        return notificationService.getUnreadNotificationsForCurrentUser(pageable);
+    }
+
+    @Operation(summary = "Get UNREAD notifications count",
+               description = "Returns the number of unread notifications for the authenticated user.",
+               responses = {
+                       @ApiResponse(responseCode = "200", description = "Successfully retrieved unread count"),
+                       @ApiResponse(responseCode = "401", description = "Unauthorized, authentication required"),
+                       @ApiResponse(responseCode = "500", description = "Internal server error")
+               })
+    @GetMapping("/unread/count")
+    public ResponseEntity<Map<String, Long>> getUnreadNotificationsCount() {
+        long count = notificationService.getUnreadNotificationsCountForCurrentUser();
+        return ResponseEntity.ok(java.util.Map.of("count", count));
+    }
+
     @Operation(summary = "Mark a notification as read",
                description = "Marks a single notification as read by its ID.",
                responses = {
