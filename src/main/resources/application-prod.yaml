@@ -29,7 +29,10 @@ spring:
       allowed-headers: "*"
       allow-credentials: true
       max-age: 3600
-
+ 
+  # Add startup timeout and health check configuration
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
 
 # Frontend configuration for OAuth redirects
 app:
@@ -73,3 +76,8 @@ management:
   health:
     defaults:
       enabled: true
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
