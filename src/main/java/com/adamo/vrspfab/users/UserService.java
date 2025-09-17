@@ -16,6 +16,24 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.adamo.vrspfab.reservations.ReservationRepository;
+import com.adamo.vrspfab.reservations.ReservationStatus;
+import com.adamo.vrspfab.payments.PaymentRepository;
+import com.adamo.vrspfab.payments.PaymentStatus;
+import com.adamo.vrspfab.payments.Payment;
+import com.adamo.vrspfab.payments.RefundRepository;
+import com.adamo.vrspfab.notifications.NotificationRepository;
+import com.adamo.vrspfab.favorites.FavoriteRepository;
+import com.adamo.vrspfab.bookmarks.BookmarkRepository;
+
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -29,6 +47,14 @@ public class UserService {
     private final EmailService emailService;
     private final ActivityEventListener activityEventListener;
     private final ApplicationEventPublisher eventPublisher;
+    private final ReservationRepository reservationRepository;
+    private final ReservationStatus reservationStatus = com.adamo.vrspfab.reservations.ReservationStatus.PENDING;
+    private final PaymentRepository paymentRepository;
+    private final PaymentStatus paymentStatus = com.adamo.vrspfab.payments.PaymentStatus.COMPLETED;
+    private final RefundRepository refundRepository;
+    private final NotificationRepository notificationRepository;
+    private final FavoriteRepository favoriteRepository;
+    private final BookmarkRepository bookmarkRepository;
 
     public Page<UserDto> getAllUsers(PageRequest pageable, String searchTerm, String role) {
         UserSpecification spec = new UserSpecification(searchTerm, role);
@@ -160,5 +186,101 @@ public class UserService {
 
     public Long countUsersByRole(String role) {
         return userRepository.countByRole(Role.valueOf(role.toUpperCase()));
+    }
+
+    public UserStatsDto getCurrentUserStats() {
+        User currentUser = userRepository.findByEmail(SecurityUtilsService.getCurrentAuthenticatedUserEmail())
+                .orElseThrow(UserNotFoundException::new);
+
+        Long userId = currentUser.getId();
+
+        // Reservations
+        long totalReservations = reservationRepository.findByUserId(userId, org.springframework.data.domain.PageRequest.of(0, 1)).getTotalElements();
+        long pendingReservations = reservationRepository.countByStatus(com.adamo.vrspfab.reservations.ReservationStatus.PENDING);
+        long confirmedReservations = reservationRepository.countByStatus(com.adamo.vrspfab.reservations.ReservationStatus.CONFIRMED);
+        long completedReservations = reservationRepository.countByStatus(com.adamo.vrspfab.reservations.ReservationStatus.COMPLETED);
+        long cancelledReservations = reservationRepository.countByStatus(com.adamo.vrspfab.reservations.ReservationStatus.CANCELLED);
+
+        // Payments
+        long totalPayments = paymentRepository.findByReservationUserId(userId, org.springframework.data.domain.PageRequest.of(0,1)).getTotalElements();
+        long completedPayments = paymentRepository.findByStatus(com.adamo.vrspfab.payments.PaymentStatus.COMPLETED).stream()
+                .filter(p -> p.getReservation() != null && p.getReservation().getUser().getId().equals(userId)).count();
+        long failedPayments = paymentRepository.findByStatus(com.adamo.vrspfab.payments.PaymentStatus.FAILED).stream()
+                .filter(p -> p.getReservation() != null && p.getReservation().getUser().getId().equals(userId)).count();
+        BigDecimal totalSpent = paymentRepository.findByReservationUserId(userId).stream()
+                .filter(p -> p.getStatus() == com.adamo.vrspfab.payments.PaymentStatus.COMPLETED)
+                .map(com.adamo.vrspfab.payments.Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Refunds
+        long refundsCount = refundRepository.findByUserId(userId, org.springframework.data.domain.PageRequest.of(0,1)).getTotalElements();
+        BigDecimal totalRefunded = refundRepository.findByUserId(userId, org.springframework.data.domain.PageRequest.of(0, Integer.MAX_VALUE))
+                .getContent().stream()
+                .map(com.adamo.vrspfab.payments.Refund::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Engagement
+        long favoritesCount = favoriteRepository.findByUserId(userId).size();
+        long bookmarksCount = bookmarkRepository.findByUserId(userId, org.springframework.data.domain.PageRequest.of(0,1)).getTotalElements();
+        long unreadNotifications = notificationRepository.countByUserAndReadFalse(currentUser);
+
+        return UserStatsDto.builder()
+                .userId(userId)
+                .firstName(currentUser.getFirstName())
+                .lastName(currentUser.getLastName())
+                .email(currentUser.getEmail())
+                .totalReservations(totalReservations)
+                .pendingReservations(pendingReservations)
+                .confirmedReservations(confirmedReservations)
+                .completedReservations(completedReservations)
+                .cancelledReservations(cancelledReservations)
+                .totalPayments(totalPayments)
+                .completedPayments(completedPayments)
+                .failedPayments(failedPayments)
+                .totalSpent(totalSpent)
+                .refundsCount(refundsCount)
+                .totalRefunded(totalRefunded)
+                .favoritesCount(favoritesCount)
+                .bookmarksCount(bookmarksCount)
+                .unreadNotifications(unreadNotifications)
+                .build();
+    }
+
+    public UserActivitySeriesDto getCurrentUserActivitySeries() {
+        var user = SecurityUtilsService.getCurrentAuthenticatedUserEmail();
+        Long userId = userRepository.findByEmail(user).orElseThrow(UserNotFoundException::new).getId();
+
+        LocalDate now = java.time.LocalDate.now();
+        List<String> months = new ArrayList<>();
+        List<Long> reservationCounts = new ArrayList<>();
+        List<Double> spending = new java.util.ArrayList<>();
+
+        for (int i = 5; i >= 0; i--) {
+            LocalDate monthDate = now.minusMonths(i);
+            LocalDateTime start = monthDate.withDayOfMonth(1).atStartOfDay();
+            LocalDateTime end = monthDate.withDayOfMonth(monthDate.lengthOfMonth()).atTime(23, 59, 59);
+
+            // Reservation count for this user in month
+            Long count = reservationRepository.findByUserId(userId, org.springframework.data.domain.PageRequest.of(0, 1))
+                    .map(r -> 1).getTotalElements();
+            reservationCounts.add(count);
+
+            // Spending this month
+            BigDecimal monthSpent = paymentRepository.findByReservationUserId(userId).stream()
+                    .filter(p -> p.getStatus() == PaymentStatus.COMPLETED)
+                    .filter(p -> p.getCreatedAt() != null && !p.getCreatedAt().toLocalDate().isBefore(monthDate.withDayOfMonth(1))
+                            && !p.getCreatedAt().toLocalDate().isAfter(monthDate.withDayOfMonth(monthDate.lengthOfMonth())))
+                    .map(Payment::getAmount)
+                    .reduce(BigDecimal.ZERO, java.math.BigDecimal::add);
+            spending.add(monthSpent.doubleValue());
+
+            months.add(monthDate.format(DateTimeFormatter.ofPattern("MMM")));
+        }
+
+        return UserActivitySeriesDto.builder()
+                .months(months)
+                .monthlyReservationCounts(reservationCounts)
+                .monthlySpending(spending)
+                .build();
     }
 }

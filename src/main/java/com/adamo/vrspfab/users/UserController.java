@@ -131,4 +131,18 @@ public class UserController {
             @RequestBody ChangePasswordRequest request) {
         userService.changePassword(id, request);
     }
+
+    @Operation(summary = "Get current user's stats",
+               description = "Aggregated statistics for the authenticated user: reservations, payments, refunds, favorites, bookmarks, notifications.")
+    @GetMapping("/me/stats")
+    public UserStatsDto getMyStats() {
+        return userService.getCurrentUserStats();
+    }
+
+    @Operation(summary = "Get current user's monthly series",
+               description = "Returns last 6 months reservation counts and spending for charts.")
+    @GetMapping("/me/activity-series")
+    public UserActivitySeriesDto getMyActivitySeries() {
+        return userService.getCurrentUserActivitySeries();
+    }
 }

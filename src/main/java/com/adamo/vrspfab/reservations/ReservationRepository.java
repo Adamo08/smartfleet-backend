@@ -82,6 +82,12 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long>,
      */
     Long countByStatus(ReservationStatus status);
 
+    Long countByUserId(Long userId);
+
+    Long countByUserIdAndStatus(Long userId, ReservationStatus status);
+
+    Long countByUserIdAndCreatedAtBetween(Long userId, LocalDateTime start, LocalDateTime end);
+
     /**
      * Counts reservations created between two dates.
      *
