@@ -11,7 +11,6 @@ import com.adamo.vrspfab.users.events.UserRoleChangedEvent;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,7 +19,6 @@ import com.adamo.vrspfab.reservations.ReservationRepository;
 import com.adamo.vrspfab.reservations.ReservationStatus;
 import com.adamo.vrspfab.payments.PaymentRepository;
 import com.adamo.vrspfab.payments.PaymentStatus;
-import com.adamo.vrspfab.payments.Payment;
 import com.adamo.vrspfab.payments.RefundRepository;
 import com.adamo.vrspfab.notifications.NotificationRepository;
 import com.adamo.vrspfab.favorites.FavoriteRepository;
@@ -48,9 +46,9 @@ public class UserService {
     private final ActivityEventListener activityEventListener;
     private final ApplicationEventPublisher eventPublisher;
     private final ReservationRepository reservationRepository;
-    private final ReservationStatus reservationStatus = com.adamo.vrspfab.reservations.ReservationStatus.PENDING;
+    private final ReservationStatus reservationStatus = ReservationStatus.PENDING;
     private final PaymentRepository paymentRepository;
-    private final PaymentStatus paymentStatus = com.adamo.vrspfab.payments.PaymentStatus.COMPLETED;
+    private final PaymentStatus paymentStatus = PaymentStatus.COMPLETED;
     private final RefundRepository refundRepository;
     private final NotificationRepository notificationRepository;
     private final FavoriteRepository favoriteRepository;
@@ -188,8 +186,8 @@ public class UserService {
         return userRepository.countByRole(Role.valueOf(role.toUpperCase()));
     }
 
-    public UserStatsDto getCurrentUserStats() {
-        User currentUser = userRepository.findByEmail(SecurityUtilsService.getCurrentAuthenticatedUserEmail())
+    public UserStatsDto getCurrentUserStats(User user) {
+        User currentUser = userRepository.findByEmail(user.getEmail())
                 .orElseThrow(UserNotFoundException::new);
 
         Long userId = currentUser.getId();
@@ -241,9 +239,8 @@ public class UserService {
                 .build();
     }
 
-    public UserActivitySeriesDto getCurrentUserActivitySeries() {
-        var user = SecurityUtilsService.getCurrentAuthenticatedUserEmail();
-        Long userId = userRepository.findByEmail(user).orElseThrow(UserNotFoundException::new).getId();
+    public UserActivitySeriesDto getCurrentUserActivitySeries(User user) {
+        Long userId = userRepository.findByEmail(user.getEmail()).orElseThrow(UserNotFoundException::new).getId();
 
         LocalDate now = LocalDate.now();
         List<String> months = new ArrayList<>();

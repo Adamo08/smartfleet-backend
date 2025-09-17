@@ -1,5 +1,6 @@
 package com.adamo.vrspfab.users;
 
+import com.adamo.vrspfab.common.SecurityUtilsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,6 +24,7 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    private final SecurityUtilsService securityUtilsService;
 
     @Operation(summary = "Get all users",
                description = "Retrieves a paginated and filtered list of all users.",
@@ -136,13 +138,15 @@ public class UserController {
                description = "Aggregated statistics for the authenticated user: reservations, payments, refunds, favorites, bookmarks, notifications.")
     @GetMapping("/me/stats")
     public UserStatsDto getMyStats() {
-        return userService.getCurrentUserStats();
+        var currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+        return userService.getCurrentUserStats(currentUser);
     }
 
     @Operation(summary = "Get current user's monthly series",
                description = "Returns last 6 months reservation counts and spending for charts.")
     @GetMapping("/me/activity-series")
     public UserActivitySeriesDto getMyActivitySeries() {
-        return userService.getCurrentUserActivitySeries();
+        var currentUser = securityUtilsService.getCurrentAuthenticatedUser();
+        return userService.getCurrentUserActivitySeries(currentUser);
     }
 }
