@@ -47,6 +47,23 @@ public interface PaymentRepository extends JpaRepository<Payment, Long>, JpaSpec
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.status = :status")
     Optional<BigDecimal> sumAmountByStatus(@Param("status") PaymentStatus status);
 
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.reservation.user.id = :userId AND p.status = :status AND p.createdAt BETWEEN :startDate AND :endDate")
+    Optional<BigDecimal> sumAmountByReservationUserIdAndStatusAndCreatedAtBetween(
+            @Param("userId") Long userId,
+            @Param("status") PaymentStatus status,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
+
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.reservation.user.id = :userId AND p.status = :status")
+    Optional<BigDecimal> sumAmountByReservationUserIdAndStatus(
+            @Param("userId") Long userId,
+            @Param("status") PaymentStatus status
+    );
+
+    @Query("SELECT COUNT(p) FROM Payment p WHERE p.reservation.user.id = :userId AND p.status = :status")
+    Long countByReservationUserIdAndStatus(@Param("userId") Long userId, @Param("status") PaymentStatus status);
+
     List<Payment> findByStatus(PaymentStatus status);
 
     /**

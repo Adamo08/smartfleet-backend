@@ -55,4 +55,11 @@ public interface RefundRepository extends JpaRepository<Refund, Long>, JpaSpecif
     // Find refunds by status
     @EntityGraph(attributePaths = {"payment", "payment.reservation", "payment.reservation.user"})
     Page<Refund> findByStatus(RefundStatus status, Pageable pageable);
+
+    // User-specific refund counts and totals
+    @Query("SELECT COUNT(r) FROM Refund r WHERE r.payment.reservation.user.id = :userId")
+    Long countByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT COALESCE(SUM(r.amount), 0) FROM Refund r WHERE r.payment.reservation.user.id = :userId")
+    Optional<BigDecimal> sumAmountByUserId(@Param("userId") Long userId);
 }

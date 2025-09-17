@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -14,7 +15,7 @@ import java.util.List;
 public class UserActivitySeriesDto {
     private List<String> months; // e.g., ["Apr", "May", ...]
     private List<Long> monthlyReservationCounts;
-    private List<Double> monthlySpending; // completed payment amounts per month
+    private List<BigDecimal> monthlySpending; // completed payment amounts per month
 }
 
 
