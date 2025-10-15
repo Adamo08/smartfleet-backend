@@ -25,12 +25,12 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope: openid, profile, email
-            redirect-uri: "${OAUTH2_REDIRECT_URI:https://adamo-smartfleet-backend-api.up.railway.app}/login/oauth2/code/{registrationId}"
+            redirect-uri: "${OAUTH2_REDIRECT_URI:https://adamo-smartfleet-backend-api.up-production.railway.app}/login/oauth2/code/{registrationId}"
           facebook:
             client-id: ${FACEBOOK_CLIENT_ID}
             client-secret: ${FACEBOOK_CLIENT_SECRET}
             scope: email, public_profile
-            redirect-uri: "${OAUTH2_REDIRECT_URI:https://adamo-smartfleet-backend-api.up.railway.app}/login/oauth2/code/{registrationId}"
+            redirect-uri: "${OAUTH2_REDIRECT_URI:https://adamo-smartfleet-backend-api-production.up.railway.app}/login/oauth2/code/{registrationId}"
         provider:
           facebook:
             authorization-uri: https://www.facebook.com/v17.0/dialog/oauth
