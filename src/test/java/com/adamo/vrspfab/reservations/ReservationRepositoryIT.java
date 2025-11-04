@@ -37,7 +37,7 @@ class ReservationRepositoryIT extends MySqlTestBaseIT {
         assertNotNull(overlapping);
 
         // pageable findAll with spec (null -> all) should not throw
-        var page = reservationRepository.findAll(null, PageRequest.of(0, 5));
+        var page = reservationRepository.findAll(PageRequest.of(0, 5));
         assertNotNull(page);
     }
 }
