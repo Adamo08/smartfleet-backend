@@ -42,7 +42,7 @@ app:
 # OAuth2 configuration for production
 oauth2:
   enabled: false
-  redirect-uri: ${OAUTH2_REDIRECT_URI:https://adamo-smartfleet-backend-api.up.railway.app}
+  redirect-uri: ${OAUTH2_REDIRECT_URI:https://adamo-smartfleet-backend-api-production.up.railway.app}
 
 
 # Server configuration for Railway deployment
