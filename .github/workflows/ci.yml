@@ -41,6 +41,8 @@ jobs:
         env:
           TESTCONTAINERS_CHECKS_DISABLE: true
           DOCKER_HOST: unix:///var/run/docker.sock
+        # Skip integration tests on CI if Docker issues persist - uncomment the next line
+        # run: ./mvnw -B verify -DskipITs
         run: ./mvnw -B verify
 
       - name: Upload surefire reports on failure
