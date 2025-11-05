@@ -46,11 +46,9 @@ jobs:
         env:
           TESTCONTAINERS_CHECKS_DISABLE: true
           TESTCONTAINERS_RYUK_DISABLED: true
+          TESTCONTAINERS_REUSABLE_ENABLE: true
           DOCKER_HOST: unix:///var/run/docker.sock
-        # Temporarily skip integration tests on CI until Docker/Testcontainers issues are resolved
-        # Integration tests require Docker which may not be fully available in GitHub Actions
-        # To re-enable: change -DskipITs to remove that flag
-        run: ./mvnw -B verify -DskipITs
+        run: ./mvnw -B verify
 
       - name: Upload surefire reports on failure
         if: ${{ failure() }}
