@@ -1,6 +1,7 @@
 package com.adamo.vrspfab.reservations;
 
 import com.adamo.vrspfab.common.containers.MySqlTestBaseIT;
+import com.adamo.vrspfab.common.config.TestMailConfig;
 import com.adamo.vrspfab.users.User;
 import com.adamo.vrspfab.users.UserRepository;
 import com.adamo.vrspfab.vehicles.Vehicle;
@@ -8,6 +9,7 @@ import com.adamo.vrspfab.vehicles.VehicleRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -15,6 +17,7 @@ import java.time.LocalDateTime;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@Import(TestMailConfig.class)
 class ReservationServiceFlowIT extends MySqlTestBaseIT {
 
     @Autowired

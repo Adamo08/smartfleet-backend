@@ -49,8 +49,10 @@ public abstract class MySqlTestBaseIT {
         registry.add("spring.datasource.hikari.max-lifetime", () -> "300000"); // 5 minutes
         registry.add("spring.datasource.hikari.idle-timeout", () -> "300000"); // 5 minutes
         registry.add("spring.datasource.hikari.validation-timeout", () -> "5000"); // 5 seconds
-        // Avoid external services in tests
+        // Minimal mail configuration for Spring Boot to create JavaMailSender bean
         registry.add("spring.mail.host", () -> "localhost");
+        registry.add("spring.mail.port", () -> "1025");
+        registry.add("spring.mail.properties.mail.smtp.from", () -> "test@example.com");
     }
 }
 

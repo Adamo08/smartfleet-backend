@@ -1,14 +1,17 @@
 package com.adamo.vrspfab.database;
 
 import com.adamo.vrspfab.common.containers.MySqlTestBaseIT;
+import com.adamo.vrspfab.common.config.TestMailConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
+@Import(TestMailConfig.class)
 class FlywayMySqlIT extends MySqlTestBaseIT {
 
     @Autowired
