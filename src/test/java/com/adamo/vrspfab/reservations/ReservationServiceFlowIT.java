@@ -4,6 +4,8 @@ import com.adamo.vrspfab.common.containers.MySqlTestBaseIT;
 import com.adamo.vrspfab.common.config.TestMailConfig;
 import com.adamo.vrspfab.users.User;
 import com.adamo.vrspfab.users.UserRepository;
+import com.adamo.vrspfab.users.Role;
+import com.adamo.vrspfab.users.AuthProvider;
 import com.adamo.vrspfab.vehicles.Vehicle;
 import com.adamo.vrspfab.vehicles.VehicleRepository;
 import org.junit.jupiter.api.Test;
@@ -30,9 +32,20 @@ class ReservationServiceFlowIT extends MySqlTestBaseIT {
     @Test
     @Transactional
     void createAndCancelReservation_persistsStatusChanges() {
-        // Arrange: pick any existing user and vehicle from seeded data
-        User user = userRepository.findAll().stream().findFirst().orElseThrow();
-        Vehicle vehicle = vehicleRepository.findAll().stream().findFirst().orElseThrow();
+        // Arrange: create test user and vehicle if not exists
+        User user = userRepository.findAll().stream().findFirst().orElseGet(() -> {
+            User newUser = User.builder()
+                    .email("test-user@example.com")
+                    .password("password123")
+                    .role(Role.CUSTOMER)
+                    .authProvider(AuthProvider.LOCAL)
+                    .build();
+            return userRepository.save(newUser);
+        });
+        
+        Vehicle vehicle = vehicleRepository.findAll().stream().findFirst().orElseThrow(
+                () -> new IllegalStateException("No vehicles found. Ensure Flyway migrations create seed data.")
+        );
 
         Reservation reservation = Reservation.builder()
                 .user(user)
