@@ -18,8 +18,7 @@ public abstract class MySqlTestBaseIT {
             .withDatabaseName("vrspfab_test")
             .withUsername("test")
             .withPassword("test")
-            .withReuse(true)
-            .waitingFor(Wait.forListeningPort())
+            .waitingFor(Wait.forLogMessage(".*ready for connections.*", 1))
             .withStartupTimeout(Duration.ofMinutes(2));
 
     @BeforeAll
@@ -31,10 +30,8 @@ public abstract class MySqlTestBaseIT {
 
     @AfterAll
     static void stopContainer() {
-        // Don't stop if reusable - let Testcontainers manage lifecycle
-        if (!MYSQL.isShouldBeReused()) {
-            MYSQL.stop();
-        }
+        // Container will be stopped automatically by Testcontainers
+        // Only stop if explicitly needed
     }
 
     @DynamicPropertySource
