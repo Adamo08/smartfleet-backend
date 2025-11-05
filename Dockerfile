@@ -1,5 +1,5 @@
-# Use OpenJDK 21 as the base image
-FROM openjdk:21-jdk-slim
+# Use Eclipse Temurin JDK 21 as the base image (official OpenJDK replacement)
+FROM eclipse-temurin:21-jdk-jammy
 
 # Set the working directory in the container
 WORKDIR /app
