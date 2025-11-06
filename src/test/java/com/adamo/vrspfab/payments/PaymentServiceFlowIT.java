@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 import com.adamo.vrspfab.common.config.TestMailConfig;
+import com.adamo.vrspfab.common.config.TestPaypalConfig;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
