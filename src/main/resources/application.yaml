@@ -59,7 +59,7 @@ spring:
 
   mail:
     host: ${SPRING_MAIL_HOST}
-    port: ${SPRING_MAIL_PORT}
+    port: ${SPRING_MAIL_PORT:587}
     username: ${SPRING_MAIL_USERNAME}
     password: ${SPRING_MAIL_PASSWORD}
     default-encoding: UTF-8
@@ -68,7 +68,9 @@ spring:
         smtp:
           auth: true
           starttls:
-            enable: true
+            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:true}
+          ssl:
+            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_ENABLE:false}
           from: ${DEFAULT_FROM}
 
 # Email Provider Configuration

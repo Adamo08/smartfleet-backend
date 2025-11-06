@@ -81,3 +81,8 @@ management:
     readinessstate:
       enabled: true
 
+# Payment provider configuration
+payments:
+  paypal:
+    enabled: ${PAYMENTS_PAYPAL_ENABLED:false} # Set to true if PayPal credentials are configured
+
