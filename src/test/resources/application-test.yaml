@@ -9,14 +9,6 @@ email:
   provider: smtp
 
 spring:
-  mail:
-    host: localhost
-    port: 2525
-    properties:
-      mail:
-        smtp:
-          from: test@example.com
-spring:
   main:
     allow-bean-definition-overriding: true
   datasource:
@@ -28,6 +20,13 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
+  mail:
+    host: localhost
+    port: 2525
+    properties:
+      mail:
+        smtp:
+          from: test@example.com
 
 paypal:
   api:

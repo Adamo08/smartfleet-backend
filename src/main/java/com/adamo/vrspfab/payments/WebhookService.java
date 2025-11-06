@@ -12,12 +12,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
 @Service
+@ConditionalOnProperty(name = "webhooks.enabled", havingValue = "true")
 public class WebhookService {
 
     private final PaymentRepository paymentRepository;
