@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 import com.adamo.vrspfab.common.config.TestMailConfig;
-import com.adamo.vrspfab.common.config.TestPaypalConfig;
+import com.adamo.vrspfab.common.config.IntegrationTestConfig;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -34,9 +34,10 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
-@Import({TestMailConfig.class, TestPaypalConfig.class})
+@Import({TestMailConfig.class, IntegrationTestConfig.class})
 @TestPropertySource(properties = {
-        "spring.profiles.active=test"
+    "spring.profiles.active=test",
+    "spring.main.allow-bean-definition-overriding=true"
 })
 class PaymentServiceFlowIT extends MySqlTestBaseIT {
 

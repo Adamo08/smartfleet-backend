@@ -1,4 +1,6 @@
 spring:
+  main:
+    allow-bean-definition-overriding: true
   datasource:
     url: jdbc:tc:mysql:8.0.36:///vrspfab_test
     username: test
