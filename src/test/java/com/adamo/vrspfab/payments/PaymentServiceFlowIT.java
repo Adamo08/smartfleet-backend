@@ -33,10 +33,9 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
-@Import(TestMailConfig.class)
+@Import({TestMailConfig.class, TestPaypalConfig.class})
 @TestPropertySource(properties = {
-        "spring.jpa.hibernate.ddl-auto=validate",
-        "spring.flyway.enabled=true"
+        "spring.profiles.active=test"
 })
 class PaymentServiceFlowIT extends MySqlTestBaseIT {
 

@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:tc:mysql:8.0.36:///vrspfab_test
+    username: test
+    password: test
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+paypal:
+  api:
+    baseUrl: https://api-m.sandbox.paypal.com
+  client:
+    id: test-client-id
+    secret: test-client-secret
+
+sendpulse:
+  api:
+    id: test-api-id
+    secret: test-api-secret
+  from:
+    email: test@example.com
+    name: SmartFleet Test

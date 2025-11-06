@@ -48,6 +48,12 @@ jobs:
           TESTCONTAINERS_RYUK_DISABLED: true
           TESTCONTAINERS_REUSABLE_ENABLE: true
           DOCKER_HOST: unix:///var/run/docker.sock
+          SPRING_PROFILES_ACTIVE: test
+          PAYPAL_CLIENT_ID: test-client-id
+          PAYPAL_CLIENT_SECRET: test-client-secret
+          PAYPAL_API_BASEURL: https://api-m.sandbox.paypal.com
+          SENDPULSE_API_ID: test-api-id
+          SENDPULSE_API_SECRET: test-api-secret
         run: ./mvnw -B verify
 
       - name: Upload surefire reports on failure
