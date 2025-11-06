@@ -2,6 +2,7 @@ package com.adamo.vrspfab.payments;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/webhooks")
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "webhooks.enabled", havingValue = "true")
 public class WebhookController {
 
     private final WebhookService webhookService;
